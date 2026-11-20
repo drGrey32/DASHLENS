@@ -46,7 +46,7 @@ Spend your money on gas, coffee, another SD card, or literally anything other th
 
 ### Option 1: Use it online
 
-**[Launch DASHLENS](dashlens.vercel.app)**
+**[Launch DASHLENS](https://dashlens.vercel.app/)**
 
 Open the link in your browser and select your dashcam's SD card, a folder containing your recordings, or individual video files. You can also drag and drop your footage into the viewer.
 
