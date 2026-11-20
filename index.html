@@ -559,12 +559,16 @@ const child=(b,bx,t)=>{for(const c of boxes(b,bx.s,bx.e))if(c.type===t)return c;
 async function parseMp4(file){
   const out={dur:0,ctime:0,codec:'',w:0,h:0,fps:0,kf:null,hasAudio:false,gps:null,moov:false};
   let pos=0,guard=0,moov=null;const tops=[];
+  // read in large chunks: the first 64 KB usually holds every box header up to the video data, and a 512 KB read at the
+  // end of the video data usually holds the whole 'moov' index, so most clips need just two reads
+  let buf=await rd(file,0,Math.min(65536,file.size)),bp=0;
+  const at=async(o,need)=>{if(o<bp||o+need>bp+buf.length){buf=await rd(file,o,Math.min(524288,file.size-o));bp=o}return buf.subarray(o-bp)};
   while(pos+8<=file.size&&guard++<5000){
-    const h=await rd(file,pos,16);if(h.length<8)break;let size=u32(h,0);const type=cc(h,4);
+    const h=await at(pos,16);if(h.length<8)break;let size=u32(h,0);const type=cc(h,4);
     if(size===1)size=u64(h,8);else if(size===0)size=file.size-pos;
     if(size<8||!/^[\x20-\x7e]{4}$/.test(type))break;
     if(tops.length<40)tops.push(type.trim()+(size>1048576?'('+Math.round(size/1048576)+'MB)':''));
-    if(type==='moov'){if(size<300*1048576)moov=await rd(file,pos,size);break}
+    if(type==='moov'){if(size<300*1048576)moov=(pos>=bp&&pos+size<=bp+buf.length)?buf.slice(pos-bp,pos-bp+size):await rd(file,pos,size);break}
     pos+=size;
   }
   out.top=tops;
@@ -614,7 +618,7 @@ function parseTextTrak(b,mdia,out){
   const stsz=child(b,stbl,'stsz'),stco=child(b,stbl,'stco')||child(b,stbl,'co64'),stsc=child(b,stbl,'stsc'),stts=child(b,stbl,'stts');if(!stsz||!stco||!stsc||!stts)return;
   const co64=cc(b,stco.p+4)==='co64',nC=u32(b,stco.s+4),uni=u32(b,stsz.s+4),nS=Math.min(u32(b,stsz.s+8),40000),nE=u32(b,stsc.s+4),sc=[];
   for(let i=0;i<nE;i++)sc.push([u32(b,stsc.s+8+i*12),u32(b,stsc.s+12+i*12)]);
-  const spcOf=ci=>{for(let k=sc.length-1;k>=0;k--)if(ci+1>=sc[k][0])return sc[k][1];return 1};
+  const spcOf=spcWalker(sc);
   const off=new Float64Array(nS),size=new Uint32Array(nS),time=new Float64Array(nS);let si=0;
   for(let ci=0;ci<nC&&si<nS;ci++){let o=co64?u64(b,stco.s+8+ci*8):u32(b,stco.s+8+ci*4);for(let j=0,n=spcOf(ci);j<n&&si<nS;j++,si++){const z=uni||u32(b,stsz.s+12+si*4);off[si]=o;size[si]=z;o+=z}}
   const ne=u32(b,stts.s+4);let k=0,t=0;for(let e=0;e<ne&&k<si;e++){const c=u32(b,stts.s+8+e*8),d=u32(b,stts.s+12+e*8);for(let j=0;j<c&&k<si;j++,k++){time[k]=t/ts;t+=d}}
@@ -636,6 +640,8 @@ async function readTextTrack(seg,job){
     if(!L.tele.hexFile&&s.trim()){L.tele.hex='text sample: '+s.slice(0,200);L.tele.hexFile=seg.name}});
   return out}
 /* ---------- audio track tables (for scrub audio) ---------- */
+// stsc lookup for chunks visited in increasing order (linear instead of quadratic for long clips)
+function spcWalker(sc){let k=0;return ci=>{if(!sc.length)return 1;while(k+1<sc.length&&ci+1>=sc[k+1][0])k++;return sc[k][1]}}
 function parseEsds(b,p,e){
   const len=()=>{let n=0;for(let k=0;k<4;k++){const c=b[p++];n=(n<<7)|(c&0x7f);if(!(c&0x80))break}return n};
   while(p<e){const tag=b[p++],l=len();
@@ -659,12 +665,12 @@ function parseAudio(b,mdia,out){
   const co64=cc(b,stco.p+4)==='co64',nC=u32(b,stco.s+4),cOff=new Float64Array(nC);
   for(let i=0;i<nC;i++)cOff[i]=co64?u64(b,stco.s+8+i*8):u32(b,stco.s+8+i*4);
   const uni=u32(b,stsz.s+4),nS=u32(b,stsz.s+8),nE=u32(b,stsc.s+4),sc=[];for(let i=0;i<nE;i++)sc.push([u32(b,stsc.s+8+i*12),u32(b,stsc.s+12+i*12)]);
-  const spcOf=ci=>{for(let k=sc.length-1;k>=0;k--)if(ci+1>=sc[k][0])return sc[k][1];return sc.length?sc[0][1]:1};
+  const spcOf=spcWalker(sc);
   const A={fmt,ts,rate:rate||ts,chn:chn||2,bits,asc:es?parseEsds(b,es.s+4,es.e):null,delta:stts?u32(b,stts.s+12):1024};
   if(fmt==='mp4a'){const off=new Float64Array(nS),size=new Uint32Array(nS);let si=0;
     for(let ci=0;ci<nC&&si<nS;ci++){const spc=spcOf(ci);let o=cOff[ci];for(let j=0;j<spc&&si<nS;j++,si++){const z=uni||u32(b,stsz.s+12+si*4);off[si]=o;size[si]=z;o+=z}}
     A.n=si;A.off=off;A.size=size;A.fd=A.delta/ts}
-  else if(/^(sowt|twos|raw )$/.test(fmt)&&bits===16){const ch=[];let f0=0;for(let ci=0;ci<nC;ci++){const spc=spcOf(ci);ch.push([cOff[ci],f0,spc]);f0+=spc}A.chunks=ch;A.nf=f0;A.le=fmt!=='twos';A.bpf=A.chn*2}
+  else if(/^(sowt|twos|raw )$/.test(fmt)&&bits===16){const ch=[];let f0=0;const spc2=spcWalker(sc);for(let ci=0;ci<nC;ci++){const spc=spc2(ci);ch.push([cOff[ci],f0,spc]);f0+=spc}A.chunks=ch;A.nf=f0;A.le=fmt!=='twos';A.bpf=A.chn*2}
   out.aud=A;
 }
 
@@ -844,7 +850,12 @@ async function readSegTelemetry(seg,job){
   if(!list||!list.length)return null;
   const n=list.length,out=new Array(n).fill(null),raws=new Array(n).fill(null),mid=n>>1;
   if(!L.tele.blockSize)L.tele.blockSize=list[0][1];
-  await pool(list.map((_,i)=>i),12,async i=>{if(job!==L.job)return;const [o,z]=list[i];const b=await rd(seg.file,o,Math.min(Math.max(z,64),2048));L.tele.blocks++;
+  // group blocks lying within 64 KB of each other into one read (fewer, larger reads are much faster on SD cards)
+  const want=list.map(([o,z],i)=>[o,Math.min(Math.max(z,64),2048),i]).sort((a,b)=>a[0]-b[0]),runs=[];
+  for(const w of want){const r=runs[runs.length-1];if(r&&w[0]-r.e<=65536&&w[0]+w[1]-r.s<=1048576){r.e=Math.max(r.e,w[0]+w[1]);r.items.push(w)}else runs.push({s:w[0],e:w[0]+w[1],items:[w]})}
+  const got=new Array(n);
+  await pool(runs,12,async r=>{if(job!==L.job)return;const b=await rd(seg.file,r.s,r.e-r.s);for(const [o,z,i] of r.items)got[i]=b.subarray(o-r.s,o-r.s+z)});
+  await pool(list.map((_,i)=>i),1,async i=>{if(job!==L.job||!got[i])return;const b=got[i];L.tele.blocks++;
     if(!L.tele.hexFile&&i===0){L.tele.hex=hexdump(b,512);L.tele.hexFile=seg.name;L.tele.hexN=n}
     if(L.tele.hexFile===seg.name&&i===mid&&!L.tele.hex2)L.tele.hex2=hexdump(b,512);
     raws[i]=b;const r=decodeGpsBlock(b);if(r){out[i]=r;L.tele.decoded++;L.tele.fam[r.fam]=(L.tele.fam[r.fam]||0)+1}});
@@ -1007,9 +1018,9 @@ const PSTEP={scan:['Finding your videos',''],clips:['Reading clip details',''],i
 const fmtN=n=>n.toLocaleString();
 function progress(kind,frac,d,n){const p=$('#prog'),c=$('#loadCard');if(kind==null){p.classList.remove('show');c.classList.remove('show');return}
   const st=PSTEP[kind]||[kind,''],pct=frac==null?null:Math.round(clamp(frac,0,1)*100);
-  $('#ldStep').textContent=st[0];$('#ldCnt').textContent=n?`${fmtN(d)} of ${fmtN(n)}${pct!=null?' · '+pct+'%':''}`:(pct?pct+'%':'');
+  $('#ldStep').textContent=st[0];$('#ldCnt').textContent=n?`${fmtN(d)} of ${fmtN(n)}${pct!=null?' · '+pct+'%':''}`:d?`${fmtN(d)} found`:(pct?pct+'%':'');
   $('#ldNote').textContent=st[1];$('#ldNote').hidden=!st[1];
-  const bar=$('#ldBar');bar.classList.toggle('ind',!n&&!pct);bar.firstElementChild.style.width=(pct||0)+'%';
+  const bar=$('#ldBar');bar.classList.toggle('ind',!n&&!pct);if(!S.loadHidden&&!c.classList.contains('show'))c.classList.add('show');bar.firstElementChild.style.width=(pct||0)+'%';
   $('#progT').textContent=n?`Loading ${pct}%`:'Loading…';$('#progB').style.width=(pct||0)+'%';
   c.classList.toggle('show',!S.loadHidden);p.classList.toggle('show',!!S.loadHidden)}
 /* ---------- clips whose names don't say when or which camera ---------- */
@@ -1064,8 +1075,8 @@ async function ingest(items,replace){
   if(!vids.length&&!side.length){progress(null);toast('No dashcam videos found there. Expected .MP4 / .MOV files.');return}
   if(replace)S.loadHidden=false;
   if(replace&&vids.length){pause();resetLibrary()}
-  const known=new Set(L.segs.map(s=>s.path+'|'+s.file.size));const fresh=[];
-  for(const it of vids){const path=it.path||it.file.webkitRelativePath||it.file.name;const k=path+'|'+it.file.size;if(known.has(k))continue;known.add(k);
+  const known=new Set(L.segs.map(s=>s.path+'|'+s.file.size));const fresh=[];let nv=0,lastY=performance.now();
+  for(const it of vids){if(++nv%100===0&&performance.now()-lastY>40){progress('scan',nv/vids.length,nv,vids.length);await new Promise(r=>setTimeout(r));lastY=performance.now()}const path=it.path||it.file.webkitRelativePath||it.file.name;const k=path+'|'+it.file.size;if(known.has(k))continue;known.add(k);
     const p=parseName(it.file.name,path);const seg={file:it.file,path,name:it.file.name,ch:p.ch||'A',chSrc:p.ch?'name':null,tsrc:p.t!=null?'name':null,start:p.t,start0:p.t,corr:0,dur:null,durKnown:false,cat:p.cat||catOf(path),meta:null,url:null,group:p.group};
     L.segs.push(seg);fresh.push(seg)}
   L.side.push(...side);
@@ -1105,7 +1116,7 @@ async function telemetryJob(){
   const pr=new Map(order.map((k,i)=>[k,i]));
   cand.sort((a,b)=>(pr.get(a.ch)-pr.get(b.ch))||(Math.abs(a.start-S.T)-Math.abs(b.start-S.T)));
   const covered=[];const isCov=s=>{let c=0;const e=s.start+s.dur*1000;for(const [a,b] of covered){const o=Math.min(b,e)-Math.max(a,s.start);if(o>0)c+=o}return c>0.8*(e-s.start)};
-  let d=0,last=0;
+  let d=0,last=0,lastTele=0;
   for(const s of cand){
     if(job!==L.job)return;
     d++;if(s.ch!==order[0]&&isCov(s))continue; // every clip of the main GPS camera is read, so overlaps can be checked
@@ -1113,7 +1124,8 @@ async function telemetryJob(){
     const r=await readSegTelemetry(s,job);if(job!==L.job)return;
     if(r){s.tele={smp:r};if(!r.some(x=>x&&(x.acc||x.accs))&&s.meta.gsen&&s.meta.gsen.length>=6){s.tele.gsen=s.meta.gsen;L.tele.src.add("'gsen' atom")}
       const got=r.some(x=>x&&x.lat!=null&&x.valid!==false),anyAcc=r.some(x=>x&&(x.acc||x.accs));if(got||anyAcc){L.tele.filesWith++;covered.push([s.start,s.start+s.dur*1000])}}
-    const now=performance.now();if(now-last>500){last=now;progress('gps',d/cand.length,d,cand.length);rebuildTele(false)}
+    const now=performance.now();if(now-last>250){progress('gps',d/cand.length,d,cand.length)}
+    if(now-lastTele>Math.max(600,(L.teleCost||0)*8)){lastTele=now;const t0=performance.now();rebuildTele(false);L.teleCost=performance.now()-t0}
   }
   for(const it of L.side){try{await parseSidecar(it)}catch(e){L.tele.notes.push('sidecar '+it.file.name+': '+e)}}
   if(job!==L.job)return;
@@ -1545,9 +1557,9 @@ class MiniMap{
   clickSeek(e){const G=L.G;if(!G)return;const r=this.cv.getBoundingClientRect();const s=256*2**this.z;const wx=this.cx+(e.clientX-r.left-this.w/2)/s,wy=this.cy+(e.clientY-r.top-this.h/2)/s;
     let best=-1,bd=1e18;for(let i=0;i<G.n;i++){const dx=G.wx[i]-wx,dy=G.wy[i]-wy,d=dx*dx+dy*dy;if(d<bd){bd=d;best=i}}
     if(best>=0&&Math.sqrt(bd)*s<14){seekTo(G.t[best]);toast(`Jumped to ${fTime(G.t[best])}`,1200)}}
-  tile_(li,z,x,y){const n=2**z;if(y<0||y>=n)return null;x=((x%n)+n)%n;const k=li+'/'+z+'/'+x+'/'+y;let t=this.tiles.get(k);
+  tile_(li,z,x,y){const n=2**z;if(y<0||y>=n)return null;x=((x%n)+n)%n;const k=li+'/'+z+'/'+x+'/'+y;let t=this.tiles.get(k);if(t&&(this._tick=(this._tick||0)+1)%8===0){this.tiles.delete(k);this.tiles.set(k,t)}
     if(!t){const fn=this.src.layers[li];if(!fn)return null;t={img:new Image(),ok:false};t.img.decoding='async';t.img.onload=()=>{t.ok=true;if(!li)this.oks++;this.dirty=true};t.img.onerror=()=>{t.err=true;if(!li)this.errs++;this.dirty=true};
-      t.img.src=fn(z,x,y);this.tiles.set(k,t);if(this.tiles.size>900){for(const kk of this.tiles.keys()){this.tiles.delete(kk);if(this.tiles.size<=700)break}}}
+      t.img.src=fn(z,x,y);this.tiles.set(k,t);if(this.tiles.size>360){for(const [kk,ot] of this.tiles){if(!ot.ok&&!ot.err)continue;this.tiles.delete(kk);if(this.tiles.size<=280)break}}}
     return t}
   frame(){const g=gpsAt(S.T);const key=g?g.wx.toFixed(9)+','+g.wy.toFixed(9)+','+g.trk.toFixed(1):'none';if(key!==this.last){this.last=key;this.dirty=true}
     if(this.follow&&g&&(Math.abs(this.cx-g.wx)>1e-12||Math.abs(this.cy-g.wy)>1e-12)){this.cx=g.wx;this.cy=g.wy;this.dirty=true}
@@ -1567,7 +1579,11 @@ class MiniMap{
     const G=L.G;
     if(G){
       const X=i=>G.wx[i]*s-left,Y=i=>G.wy[i]*s-top;
-      const path=(a,b)=>{c.beginPath();let pen=false;for(let i=a;i<=b;i++){const x=X(i),y=Y(i);if(!pen||G.t[i]-G.t[i-1]>30000||G.brk[i]){c.moveTo(x,y);pen=true}else c.lineTo(x,y)}};
+      // draw only the parts of the track that are on screen (long trips can hold 100,000+ points)
+      if(!G.boxes){const bx=[];for(let i=0;i<G.n;i+=256){let x0=1,x1=0,y0=1,y1=0;const e=Math.min(G.n,i+257);for(let j=i;j<e;j++){const x=G.wx[j],y=G.wy[j];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}bx.push([x0,x1,y0,y1])}G.boxes=bx}
+      const m=24/s,vx0=left/s-m,vx1=(left+W)/s+m,vy0=top/s-m,vy1=(top+H)/s+m;
+      const path=(a,b)=>{c.beginPath();for(let k=a>>8;k<=b>>8;k++){const q=G.boxes[k];if(!q||q[1]<vx0||q[0]>vx1||q[3]<vy0||q[2]>vy1)continue;
+        let pen=false;for(let i=Math.max(a,k<<8),e=Math.min(b,(k<<8)+256);i<=e;i++){const x=X(i),y=Y(i);if(!pen||G.t[i]-G.t[i-1]>30000||G.brk[i]){c.moveTo(x,y);pen=true}else c.lineTo(x,y)}}};
       c.lineJoin='round';c.lineCap='round';
       path(0,G.n-1);c.strokeStyle='#35c3d655';c.lineWidth=3;c.stroke();
       const si=inSpan(S.T);if(si>=0){const sp=L.spans[si];const a=Math.max(0,bsearch(G.t,sp.s,G.n)),b=Math.max(a,bsearch(G.t,sp.e,G.n));
@@ -1745,9 +1761,9 @@ function buildAudSel(){const s=$('#audSel');s.innerHTML='';for(const k of L.keys
 function buildChRows(){const tb=$('#chRows');tb.innerHTML='';for(const k of L.keys){const c=chCfg(k);const tr=el('tr');
   tr.innerHTML=`<td><b>${k}</b></td><td><input type="text" data-k="${k}" data-f="label" placeholder="e.g. Front, Rear, Cabin" value="${(c.label||'').replace(/"/g,'&quot;')}"></td>`;tb.appendChild(tr)}
   if(!L.keys.length)tb.innerHTML='<tr><td colspan="2" class="note">Load footage to name the cameras.</td></tr>'}
-function updateDiag(){
+function updateDiag(full){
   if(window.__gsShow)window.__gsShow();
-  {const e=$('#sGRate');if(e){const r=L.A&&L.A.rate;e.textContent='Reduces jitter in the readings.'}}
+  if(!full)return;
   const t=L.tele,lines=[];
   const cnt=L.keys.map(k=>`${k}:${L.chans.get(k).all.length}`).join(' ');
   lines.push(`Clips: ${L.segs.length} (${cnt||'-'}), sidecar files: ${L.side.length}`);
@@ -1806,14 +1822,17 @@ function bindSettings(){
     window.__gsShow=show;show()}
   const ms=$('#sMap');for(const k in MAPSRC){const o=el('option');o.value=k;o.textContent=MAPSRC[k].name;ms.appendChild(o)}bindSel('#sMap','mapSrc',()=>MAP&&MAP.setSource(S.set.mapSrc));
   $('#bReset').onclick=e=>{const b=e.currentTarget;if(!b._arm){b._arm=1;b.textContent='Click again to reset';setTimeout(()=>{b._arm=0;b.textContent='Reset'},3000);return}try{localStorage.removeItem('dcp.settings')}catch(x){}location.reload()};
-  $('#bCopyDiag').onclick=async()=>{updateDiag();const txt=$('#diag').textContent;try{await navigator.clipboard.writeText(txt);toast('Report copied. Paste it into your message.')}catch(e){const ta=el('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Diagnostics copied')}catch(e2){toast('Select the text and copy it manually')}ta.remove()}};
+  $('#bCopyDiag').onclick=async()=>{updateDiag(true);const txt=$('#diag').textContent;try{await navigator.clipboard.writeText(txt);toast('Report copied. Paste it into your message.')}catch(e){const ta=el('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Diagnostics copied')}catch(e2){toast('Select the text and copy it manually')}ta.remove()}};
 }
 function syncSkip(){$('#bSkip').classList.toggle('on',S.set.skipGaps)}
 
 /* =====================================================================
    File picking & drag-drop
    ===================================================================== */
-async function walkHandle(dir,prefix,out){for await(const [name,h] of dir.entries()){if(h.kind==='file'){if(VIDEO_EXT.test(name)||SIDE_EXT.test(name))out.push({file:await h.getFile(),path:prefix+name})}else if(h.kind==='directory'&&!name.startsWith('.'))await walkHandle(h,prefix+name+'/',out)}}
+async function walkHandle(dir,prefix,out){const files=[],dirs=[];
+  for await(const [name,h] of dir.entries()){if(h.kind==='file'){if(VIDEO_EXT.test(name)||SIDE_EXT.test(name))files.push([h,prefix+name])}else if(h.kind==='directory'&&!name.startsWith('.'))dirs.push([h,prefix+name+'/'])}
+  await pool(files,16,async([h,path])=>{out.push({file:await h.getFile(),path});if(out.length%50===0)progress('scan',null,out.length)});
+  for(const [h,pre] of dirs)await walkHandle(h,pre,out)}
 // ask before replacing footage that is already loaded
 function confirmReplace(go,n){if(!L.segs.length){go();return}
   const m=$('#repModal');$('#repTxt').textContent=`The ${L.segs.length} clip${L.segs.length>1?'s':''} on the timeline now will be closed and replaced${n?` by the ${n} file${n>1?'s':''} you dropped`:''}. Your layout and settings are kept.`;
