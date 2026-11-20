@@ -216,6 +216,7 @@ input.sw:checked{background:var(--acc)}input.sw:checked::before{transform:transl
 .segsel{display:flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden;flex:none}
 .segsel button{border:0;background:var(--panel);color:var(--muted);height:28px;padding:0 10px;font-size:12px;cursor:pointer}
 .segsel button+button{border-left:1px solid var(--line2)}.segsel button:hover{color:var(--text)}.segsel button.on{background:#ffb02022;color:var(--acc);font-weight:600}
+.sver{margin:18px 0 4px;text-align:center;font-size:11px;color:var(--dim);letter-spacing:.04em;user-select:text}
 details.adv summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding-bottom:8px}details.adv summary::-webkit-details-marker{display:none}
 details.adv summary h3::after{content:" ▸";color:var(--muted)}details.adv[open] summary h3::after{content:" ▾"}details.adv summary span{font-size:11.5px;color:var(--muted)}
 table.cht td:first-child{width:28px;color:var(--muted);font-weight:700}
@@ -362,6 +363,7 @@ pre#diag{background:#0a0d11;border:1px solid var(--line);border-radius:8px;paddi
     <div class="srow"><div class="sl"><b>Reset settings</b><small>Restore every setting and layout to its default.</small></div><button class="btn" id="bReset">Reset</button></div>
     <pre id="diag" hidden>No footage loaded.</pre>
   </details>
+  <p class="sver" id="appVer"></p>
 </aside>
 
 <div class="menu" id="tilesMenu"></div>
@@ -482,6 +484,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${k} · 
 /* =====================================================================
    Library model
    ===================================================================== */
+const VERSION='1.0.0';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -1771,7 +1774,7 @@ let gsShow=null;   // refreshes the G-sensor scale readout in Settings
 function updateDiag(full){
   if(gsShow)gsShow();
   if(!full)return;
-  const t=L.tele,lines=[];
+  const t=L.tele,lines=[`DashLens ${VERSION} · ${navigator.userAgent}`];
   const cnt=L.keys.map(k=>`${k}:${L.chans.get(k).all.length}`).join(' ');
   lines.push(`Clips: ${L.segs.length} (${cnt||'-'}), sidecar files: ${L.side.length}`);
   {const f=new Map();for(const x of L.segs){const d=x.path.split('/').slice(0,-1).join('/')||'(top level)';f.set(d,(f.get(d)||0)+1)}
@@ -1939,6 +1942,7 @@ $('#bTipsX').onclick=()=>{$('#tips').classList.remove('show');try{localStorage.s
 const ariaFix=()=>{for(const b of document.querySelectorAll('button[title]:not([aria-label])'))b.setAttribute('aria-label',b.title)};ariaFix();new MutationObserver(ariaFix).observe(document.body,{childList:true,subtree:true});
 {const tl=$('#tl');tl.setAttribute('role','slider');tl.setAttribute('aria-label','Timeline: drag to scrub');tl.tabIndex=0}
 $('#bBannerX').innerHTML=IC.x;$('#bBannerX').onclick=()=>{S.bannerOff=S.bannerMsg;$('#banner').classList.remove('show')};
+$('#appVer').textContent=`DashLens ${VERSION}`;
 requestAnimationFrame(tick);
 })();
 </script>
