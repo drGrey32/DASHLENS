@@ -4,6 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DashLens</title>
+<meta name="description" content="Free dashcam video player that runs in your browser. Plays every camera in sync, joins clips automatically, and shows speed, a route map and the G-sensor. Your videos never leave your computer.">
+<meta name="theme-color" content="#0a0c0f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0c0f'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%23ffb020' stroke-width='6'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%23ffb020'/%3E%3C/svg%3E">
+<!--
+  DashLens: a dashcam video player in a single HTML file.
+
+  Everything runs locally in the browser: video files are read with the File API and never uploaded.
+  The only network requests are map tiles (Esri), and none are made when the map style is set to "No map".
+
+  Layout of this file
+    <style>    theme, top bar, video tiles, timeline, panels, settings
+    <body>     markup for the top bar, stage, timeline, controls and dialogs
+    <script>   1. settings and file-name parsing (most dashcam brands)
+               2. MP4 reading: clip index, keyframes, audio, subtitle tracks
+               3. telemetry: embedded GPS blocks, NMEA/GPX sidecars, G-sensor detection and calibration
+               4. library: clips, cameras, drives, loading progress
+               5. playback: one player per camera, kept in sync with a shared clock
+               6. interface: layout, map, G-sensor panel, timeline, settings, keyboard
+-->
 <style>
 :root{
   --bg:#0a0c0f; --bg2:#0f1217; --panel:#141820; --panel2:#1a1f28; --line:#20262f; --line2:#2c3340;
@@ -100,7 +119,6 @@ body.single .tb[data-act=focus],body.single .tb[data-act=max],body.single .tb[da
 @container (max-width:430px){.tb.x2{display:none}}
 @container (max-width:280px){.tb[data-act=info],.tb[data-act=zoom]{display:none}}
 .tile{position:absolute;padding:2px;container-type:inline-size}
-.tile.overlay .tin{box-shadow:0 6px 24px #000a,0 0 0 1px #ffffff18}
 .tin{position:absolute;inset:2px;background:#000;border-radius:6px;overflow:hidden}
 .vwrap{position:absolute;inset:0;transform-origin:center}
 .vwrap video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;pointer-events:none}
@@ -177,9 +195,9 @@ input[type=range]{accent-color:var(--acc)}
 .shead{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}.shead h2{margin:0;font-size:17px}
 .sec{background:#141922;border:1px solid var(--line);border-radius:12px;padding:12px 14px 6px;margin:12px 0}
 .sec h3{margin:0 0 4px!important;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)!important}
-.sdesc{margin:0 0 8px;font-size:12.5px;color:var(--muted)}.shint{margin:8px 0 6px;font-size:11.5px;color:var(--dim);line-height:1.45}
+.sdesc{margin:0 0 8px;font-size:12.5px;color:var(--muted)}
 .srow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--line)}
-.sec>h3+.srow,.sec>.ssub+.srow,summary+.srow{border-top:0}
+.sec>h3+.srow,summary+.srow{border-top:0}
 .srow.col{flex-direction:column;align-items:stretch;gap:8px}
 .sl{display:flex;flex-direction:column;gap:2px;min-width:0}.sl b{font-size:13px;font-weight:600}.sl small{font-size:11.5px;color:var(--muted);line-height:1.35}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
@@ -190,7 +208,6 @@ input[type=range]{accent-color:var(--acc)}
 .chip:has(input:checked){color:var(--text);border-color:color-mix(in srgb,var(--c) 60%,transparent);background:color-mix(in srgb,var(--c) 14%,#0f1318)}
 .chip:has(input:checked) i{background:var(--c)}
 .chip:has(input:focus-visible){outline:2px solid var(--acc);outline-offset:2px}
-.ssub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:12px 0 2px;border-top:1px solid var(--line);margin-top:2px}
 .sline{display:flex;align-items:center;gap:10px}.sline input[type=range]{flex:1}.sval{font:600 12px var(--mono);min-width:74px;text-align:right}
 .ssel{background:var(--panel);border:1px solid var(--line2);border-radius:7px;height:30px;padding:0 8px;min-width:150px;max-width:190px}
 input.sw{appearance:none;-webkit-appearance:none;flex:none;width:38px;height:22px;border-radius:11px;background:#2c3340;position:relative;cursor:pointer;transition:background .15s;margin:0}
@@ -204,9 +221,6 @@ details.adv summary h3::after{content:" ▸";color:var(--muted)}details.adv[open
 table.cht td:first-child{width:28px;color:var(--muted);font-weight:700}
 .drawer h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center}
 .drawer h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:600}
-.frow{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap}
-.frow label{color:var(--muted);min-width:120px}
-.frow select,.frow input[type=text],.frow input[type=number]{background:var(--panel);border:1px solid var(--line2);border-radius:6px;height:28px;padding:0 6px}
 .chk{display:inline-flex;align-items:center;gap:5px;color:var(--text)!important;min-width:0!important;cursor:pointer}
 table.cht{width:100%;border-collapse:collapse;font-size:12px}
 table.cht th{color:var(--muted);font-weight:500;text-align:left;padding:4px 3px;font-size:11px}
@@ -398,7 +412,7 @@ const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const pad=(n,w=2)=>String(n).padStart(w,'0');
 const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
-const store={get(k,d){try{const v=localStorage.getItem('dcp.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('dcp.'+k,JSON.stringify(v))}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem('dashlens.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('dashlens.'+k,JSON.stringify(v))}catch(e){}}};
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // All clip times are "floating" local camera time stored as Date.UTC(...) values and printed with UTC getters.
 const fDate=t=>{const d=new Date(t);return `${DOW[d.getUTCDay()]} ${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`};
@@ -425,10 +439,6 @@ const IC={
  fwd10:'<svg viewBox="0 0 24 24"><path d="M12 4V1l5 4-5 4V6a7 7 0 1 0 7 7h2a9 9 0 1 1-9-9z"/><text x="11.8" y="16.6" font-size="7.6" font-weight="700" text-anchor="middle" font-family="system-ui,sans-serif">10</text></svg>',
  triL:'<svg viewBox="0 0 24 24"><path d="M16 5v14L6 12z"/></svg>',
  triR:'<svg viewBox="0 0 24 24"><path d="M8 5v14l10-7z"/></svg>',
- back:'<svg viewBox="0 0 24 24"><path d="M11.5 18V6L3 12zm.5-6 8.5 6V6z"/></svg>',
- fwd:'<svg viewBox="0 0 24 24"><path d="M3.5 18 12 12 3.5 6zm8.5-12v12l8.5-6z"/></svg>',
- frB:'<svg viewBox="0 0 24 24"><path d="M6 5h2.4v14H6zm13 0v14l-9-7z"/></svg>',
- frF:'<svg viewBox="0 0 24 24"><path d="M15.6 5H18v14h-2.4zM5 19V5l9 7z"/></svg>',
  vol:'<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>',
  mute:'<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm13.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z"/></svg>',
  gear:'<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.47.47 0 0 0-.47.41l-.36 2.54a7.4 7.4 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>',
@@ -438,7 +448,6 @@ const IC={
  plus:'<svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>',
  minus:'<svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg>',
  mirror:'<svg viewBox="0 0 24 24"><path d="M11 2h2v20h-2zM9 6v12H2zm6 0 7 12h-7z"/></svg>',
- rot:'<svg viewBox="0 0 24 24"><path d="M12 5V2L7.5 6 12 10V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>',
  fit:'<svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zm2 2v10h14V7zm2 2h4v2H9v2H7zm10 6h-4v-2h2v-2h2z"/></svg>',
  cam:'<svg viewBox="0 0 24 24"><path d="M9 4 7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>',
  max:'<svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.4l-5.3 5.3-1.4-1.4L17.6 5H14zM3 14h2v3.6l5.3-5.3 1.4 1.4L6.4 19H10v2H3z"/></svg>',
@@ -449,9 +458,7 @@ const IC={
  info:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm-1 7h2v6h-2zm0-4h2v2h-2z"/></svg>',
  flip:'<svg viewBox="0 0 24 24"><path d="M2 11h20v2H2zM6 9h12L12 2zm0 6h12l-6 7z"/></svg>',
  grid:'<svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg>',
- edit:'<svg viewBox="0 0 24 24"><path d="M3 17.2V21h3.8L17.8 10l-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z"/></svg>',
  x:'<svg viewBox="0 0 24 24"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z"/></svg>',
- grip:'<svg viewBox="0 0 24 24"><path d="M8 4h3v3H8zm5 0h3v3h-3zM8 10.5h3v3H8zm5 0h3v3h-3zM8 17h3v3H8zm5 0h3v3h-3z"/></svg>'
 };
 
 /* =====================================================================
@@ -460,15 +467,15 @@ const IC={
 const DEF={ch:{},audioCh:null,vol:0.9,muted:false,rate:1,skipGaps:true,compress:true,cats:{normal:true,event:true,parking:true},
   units:'kmh',spdUnit:'auto',gpsRetime:true,gScale:'auto',gSmooth:'low',gFwd:'auto',gRight:'auto',mapSrc:'esri-hyb',mapZ:17,
   lay:{mode:'right',focus:'A',last:'right',col:0.5,row:0.5,strip:0.26,sideW:380,mapH:0.5,order:[],hidden:[]}};
-function loadSettings(){const s=store.get('settings',{});const o=JSON.parse(JSON.stringify(DEF));for(const k in s){if(k==='layout')continue;if(k==='lay'||k==='cats')Object.assign(o[k],s[k]);else o[k]=s[k]}
-  if((o.v||0)<4){o.lay.mode='right';o.lay.last='right';o.lay.focus='A';o.lay.hidden=o.lay.hidden.filter(k=>k!=='A');o.v=4}
+function loadSettings(){const s=store.get('settings',{}),o=JSON.parse(JSON.stringify(DEF));
+  for(const k in s){if(!(k in DEF))continue;if(k==='lay'||k==='cats')Object.assign(o[k],s[k]);else o[k]=s[k]}
   return o}
 const S={set:loadSettings(),T:0,playing:false,scrubbing:false,scrubExact:false,stalled:false,notReadySince:0,lastTick:performance.now(),
   maxTile:null,wasPlaying:false,leadKey:null,lastMoveAt:0,stallSince:0};
 let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>store.set('settings',S.set),300)}
 window.addEventListener('pagehide',()=>{if(saveT){clearTimeout(saveT);store.set('settings',S.set)}});
 function chCfg(k){if(!S.set.ch[k])S.set.ch[k]={label:'',mirror:false,flip:false,fit:'contain',offset:0};const c=S.set.ch[k];
-  if(c.rot){c.flip=!c.flip;c.mirror=!c.mirror;delete c.rot}  // rotate 180° = mirror + flip
+  if(!Number.isFinite(c.offset))c.offset=0;if(typeof c.label!=='string')c.label='';if(c.fit!=='cover')c.fit='contain';
   return c}
 const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${k} · ${c.label}`:c.label;if(CH_NAME[k])return CH_NAME[k];if(k==='B'&&L.keys.length===2&&L.keys.includes('F')&&!L.keys.includes('A'))return 'Rear';return L.keys.length<=1?'Camera':`Cam ${k}`};
 
@@ -485,7 +492,7 @@ const L={segs:[],chans:new Map(),keys:[],spans:[],spanC:[],tMin:0,tMax:0,cTot:0,
 function mkTime(Y,M,D,h,mi,s){Y=+Y;M=+M;D=+D;h=+h;mi=+mi;s=+s;if(M<1||M>12||D<1||D>31||h>23||mi>59||s>59)return null;return Date.UTC(Y,M-1,D,h,mi,s)}
 const CH_WORD={front:'F',rear:'R',back:'R',inside:'I',interior:'I',cabin:'I',inner:'I',incar:'I',side:'S'};
 const CH_NAME={F:'Front',R:'Rear',I:'Interior',S:'Side'};
-// Understands e.g. Vantrue 20261116_145511_21776_P_A, Viofo 2024_0315_101500_0012F / …PF, BlackVue 20190415_121653_NF / _ER / _PR,
+// Understands e.g. Vantrue 20250314_101500_00012_N_A, Viofo 2024_0315_101500_0012F / …PF, BlackVue 20190415_121653_NF / _ER / _PR,
 // Thinkware REC_2020_01_01_12_00_00_F / EVT_… / MOT_…, Nextbase 240915_143027_001_FH, 70mai NO20230101-120000-000123F / EV… / PA…,
 // Garmin GRMN0001 (time from inside the file), files in Front/Rear folders, and plain single-camera names.
 function parseName(name,path){
@@ -1097,7 +1104,7 @@ async function metaJob(segs){
   let d=0,last=0;
   await pool(todo,6,async s=>{if(job!==L.job)return;await metaOf(s);d++;const now=performance.now();if(now-last>350){last=now;progress('index',d/todo.length,d,todo.length);rebuildModel();if(!TL.user)fitView();TL.dirty=true;buildTripSel()}});
   if(job!==L.job)return;rebuildModel();if(!TL.user)fitView();TL.dirty=true;buildTripSel();buildAudSel();progress('look',null);updateDiag();
-  if(!HEVC_OK&&L.segs.some(s=>s.meta&&/^(hvc1|hev1)$/.test(s.meta.codec)))banner(IN_FRAME?'Your clips are H.265 (HEVC), which this preview window can’t play, and the map can’t load street tiles here. <b>Download the .html file and open it in Chrome.</b>':'Your clips are H.265 (HEVC) and this browser can’t decode them. Use <b>Chrome</b> with hardware acceleration on (Edge on Windows also needs the HEVC Video Extensions).');
+  if(!HEVC_OK&&L.segs.some(s=>s.meta&&/^(hvc1|hev1)$/.test(s.meta.codec)))banner('Your clips are H.265 (HEVC) and this browser can’t decode them. Use <b>Chrome</b> with hardware acceleration on (Edge on Windows also needs the HEVC Video Extensions).');
 }
 async function telemetryJob(){
   const job=++L.job;L.teleDone=false;$('#dataNote').classList.remove('show');L.accPts=[];L.sideRaw=[];L.tz=null;for(const s of L.segs)s.tele=null;L.tele.blocks=0;L.tele.decoded=0;L.tele.fam={};L.tele.files=0;L.tele.filesWith=0;L.tele.src=new Set();L.tele.notes=[];L.accLay=undefined;L.tele.accNote='';L.tele.hex='';L.tele.hex2='';L.tele.hexFile='';L.tele.blockSize=0;
@@ -1230,7 +1237,7 @@ class ChanPlayer{
 }
 function errMsg(seg,e){const m=seg.meta,c=m&&m.codec||'';const hevc=/^(hvc1|hev1)$/.test(c);const ext=(seg.name.match(/\.(\w+)$/)||[])[1]||'';
   if(/^(avi|ts|mts)$/i.test(ext))return `Web browsers can't play .${ext.toUpperCase()} files.\nConvert ${seg.name} to MP4 (for example with the free HandBrake app) to view it here.`;
-  if(e.code===4||e.code===3)return `Can't decode ${seg.name}${c?` (${c}${hevc?' = H.265/HEVC':''})`:''} here.`+(hevc?(IN_FRAME?'\nThis preview window has no H.265 decoder. Open the downloaded .html file in Chrome.':'\nOpen this page in Chrome with hardware acceleration on (Settings → System). Edge on Windows also needs the HEVC Video Extensions.'):'');
+  if(e.code===4||e.code===3)return `Can't decode ${seg.name}${c?` (${c}${hevc?' = H.265/HEVC':''})`:''} here.`+(hevc?'\nOpen this page in Chrome with hardware acceleration on (Settings → System). Edge on Windows also needs the HEVC Video Extensions.':'');
   return `Couldn't read ${seg.name} (error ${e.code}).`}
 function leadTime(){
   const ks=[S.leadKey,...L.keys.filter(k=>k!==S.leadKey)];
@@ -1425,7 +1432,7 @@ function showDataNote(){const m=missingData(),dn=$('#dataNote');if(!m.gps&&!m.ac
   let h=`<h4>${IC_WARN}${both?'No GPS or G-sensor data in '+files:m.gps?'No GPS data in '+files:'No G-sensor data in '+files}</h4>`;
   if(m.gps)h+=`<div class="dn"><i>${IC_PIN}</i><div><b>Map, speed and heading aren't available</b>The video plays normally, but there's no location recorded. This usually means the camera's GPS was unplugged, turned off in its settings, or hadn't found satellites yet.</div></div>`;
   if(m.acc)h+=`<div class="dn"><i>${IC_G}</i><div><b>The G-sensor panel isn't available</b>No motion readings were found. Some cameras don't record them, or store them in a format only their own app can read.</div></div>`;
-  h+=`<div class="dnf"><small>Think your camera did record ${both?'this data':m.gps?'GPS':'G-sensor data'}? Go to Settings › Help › Copy report and send it with your camera model.</small><button class="btn primary" id="bDnX">Got it</button></div>`;
+  h+=`<div class="dnf"><small>Think your camera did record ${both?'this data':m.gps?'GPS':'G-sensor data'}? Copy the report in Settings › Help and include it, with your camera model, when you report the problem.</small><button class="btn primary" id="bDnX">Got it</button></div>`;
   dn.innerHTML=h;dn.classList.add('show');$('#bDnX').onclick=()=>dn.classList.remove('show')}
 function adaptUI(){const one=L.keys.length<=1,noGps=L.teleDone&&!L.G;
   {const m=missingData();if(!m.gps&&!m.acc)$('#dataNote').classList.remove('show')}
@@ -1434,7 +1441,7 @@ function adaptUI(){const one=L.keys.length<=1,noGps=L.teleDone&&!L.G;
   const lg=$('#legend');if(lg){for(const sp of lg.children){const t=sp.textContent;sp.classList.toggle('hide',(t==='Speed'&&noGps)||(t==='G jolt'&&L.teleDone&&!L.A)||(t==='Parking'&&!L.segs.some(x=>x.cat==='parking'))||(t==='Event'&&!L.segs.some(x=>x.cat==='event')))}}}
 function loadSummary(){const n=L.keys.length,parts=[`${n} camera${n>1?'s':''}${n>1?' ('+L.keys.map(chLabel).join(', ')+')':''}`,`${L.spans.length} drive${L.spans.length>1?'s':''}`];
   if(L.G)parts.push('GPS ✓');if(L.A)parts.push('G-sensor ✓');toast(parts.join(' · '),5000);showDataNote();
-  try{if(!localStorage.getItem('dcp.tips1'))$('#tips').classList.add('show')}catch(e){}}
+  try{if(!localStorage.getItem('dashlens.tipsSeen'))$('#tips').classList.add('show')}catch(e){}}
 function buildFocusSel(){const s=$('#focusSel');if(!s)return;s.innerHTML='';const ks=visVids();if(!ks.length){s.innerHTML='<option value="">Focus: –</option>';return}
   ks.forEach(k=>{const o=el('option');o.value=k;o.textContent=`Focus: ${chLabel(k)}`;s.appendChild(o)});s.value=curFocus(ks)}
 function swapTiles(a,b){const lay=S.set.lay,before=curFocus(visVids()),o=vidOrder(),i=o.indexOf(a),j=o.indexOf(b);if(i<0||j<0)return;o[i]=b;o[j]=a;
@@ -1639,8 +1646,7 @@ class AccPanel{
     c.fillStyle=GCOL.brk;c.fillText('BRAKING',cx,y+10);c.fillStyle=GCOL.acc;c.fillText('ACCELERATING',cx,y+s-2);
     c.save();c.translate(x+9,cy);c.rotate(-Math.PI/2);c.fillStyle=GCOL.rt;c.fillText('RIGHT TURN',0,0);c.restore();
     c.save();c.translate(x+s-9,cy);c.rotate(Math.PI/2);c.fillStyle=GCOL.lt;c.fillText('LEFT TURN',0,0);c.restore();
-    // the car, seen from above, nose up
-    // the car, seen from above, nose up: solid body first, outline again on top of the ball so it never disappears
+        // the car, seen from above, nose up: solid body first, outline again on top of the ball so it never disappears
     const cw=Math.max(11,R*0.21),chh=cw*2,x0=cx-cw/2,y0=cy-chh/2;
     const car=solid=>{c.lineWidth=solid?1:1.6;
       if(solid){c.fillStyle='#1b2029';for(const [wx,wy] of [[x0-cw*0.12,y0+chh*0.14],[x0+cw-cw*0.1,y0+chh*0.14],[x0-cw*0.12,y0+chh*0.68],[x0+cw-cw*0.1,y0+chh*0.68]])roundRect(c,wx,wy,cw*0.22,chh*0.18,1.2),c.fill()}
@@ -1761,8 +1767,9 @@ function buildAudSel(){const s=$('#audSel');s.innerHTML='';for(const k of L.keys
 function buildChRows(){const tb=$('#chRows');tb.innerHTML='';for(const k of L.keys){const c=chCfg(k);const tr=el('tr');
   tr.innerHTML=`<td><b>${k}</b></td><td><input type="text" data-k="${k}" data-f="label" placeholder="e.g. Front, Rear, Cabin" value="${(c.label||'').replace(/"/g,'&quot;')}"></td>`;tb.appendChild(tr)}
   if(!L.keys.length)tb.innerHTML='<tr><td colspan="2" class="note">Load footage to name the cameras.</td></tr>'}
+let gsShow=null;   // refreshes the G-sensor scale readout in Settings
 function updateDiag(full){
-  if(window.__gsShow)window.__gsShow();
+  if(gsShow)gsShow();
   if(!full)return;
   const t=L.tele,lines=[];
   const cnt=L.keys.map(k=>`${k}:${L.chans.get(k).all.length}`).join(' ');
@@ -1819,10 +1826,10 @@ function bindSettings(){
     const show=()=>{const auto=S.set.gScale==='auto';a.checked=auto;r.disabled=auto;const val=auto?(L.tele.gScale||256):+S.set.gScale;r.value=1124-clamp(val,100,1024);v.textContent=`${+(+val).toFixed(1)} = 1 g`;r.style.opacity=auto?0.45:1};
     r.oninput=()=>{const val=1124-r.value;S.set.gScale=String(val);a.checked=false;r.disabled=false;r.style.opacity=1;v.textContent=`${val} = 1 g`;save();clearTimeout(tm);tm=setTimeout(rebuildTele,60)};
     a.onchange=()=>{S.set.gScale=a.checked?'auto':String(1124-r.value);save();rebuildTele();show()};
-    window.__gsShow=show;show()}
+    gsShow=show;show()}
   const ms=$('#sMap');for(const k in MAPSRC){const o=el('option');o.value=k;o.textContent=MAPSRC[k].name;ms.appendChild(o)}bindSel('#sMap','mapSrc',()=>MAP&&MAP.setSource(S.set.mapSrc));
-  $('#bReset').onclick=e=>{const b=e.currentTarget;if(!b._arm){b._arm=1;b.textContent='Click again to reset';setTimeout(()=>{b._arm=0;b.textContent='Reset'},3000);return}try{localStorage.removeItem('dcp.settings')}catch(x){}location.reload()};
-  $('#bCopyDiag').onclick=async()=>{updateDiag(true);const txt=$('#diag').textContent;try{await navigator.clipboard.writeText(txt);toast('Report copied. Paste it into your message.')}catch(e){const ta=el('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Diagnostics copied')}catch(e2){toast('Select the text and copy it manually')}ta.remove()}};
+  $('#bReset').onclick=e=>{const b=e.currentTarget;if(!b._arm){b._arm=1;b.textContent='Click again to reset';setTimeout(()=>{b._arm=0;b.textContent='Reset'},3000);return}try{localStorage.removeItem('dashlens.settings')}catch(x){}location.reload()};
+  $('#bCopyDiag').onclick=async()=>{updateDiag(true);const txt=$('#diag').textContent;try{await navigator.clipboard.writeText(txt);toast('Report copied to the clipboard.')}catch(e){const ta=el('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Diagnostics copied')}catch(e2){toast('Select the text and copy it manually')}ta.remove()}};
 }
 function syncSkip(){$('#bSkip').classList.toggle('on',S.set.skipGaps)}
 
@@ -1928,13 +1935,11 @@ MONO=getComputedStyle(document.body).getPropertyValue('--mono')||'monospace';
 tlInit();bindControls();bindSettings();bindFiles();ensureTiles();applyLayout();buildChRows();adaptUI();
 $('#bLoadHide').onclick=()=>{S.loadHidden=true;$('#loadCard').classList.remove('show');$('#prog').classList.add('show')};
 $('#prog').onclick=()=>{S.loadHidden=false;$('#prog').classList.remove('show');$('#loadCard').classList.add('show')};
-$('#bTipsX').onclick=()=>{$('#tips').classList.remove('show');try{localStorage.setItem('dcp.tips1','1')}catch(e){}};
+$('#bTipsX').onclick=()=>{$('#tips').classList.remove('show');try{localStorage.setItem('dashlens.tipsSeen','1')}catch(e){}};
 const ariaFix=()=>{for(const b of document.querySelectorAll('button[title]:not([aria-label])'))b.setAttribute('aria-label',b.title)};ariaFix();new MutationObserver(ariaFix).observe(document.body,{childList:true,subtree:true});
 {const tl=$('#tl');tl.setAttribute('role','slider');tl.setAttribute('aria-label','Timeline: drag to scrub');tl.tabIndex=0}
 $('#bBannerX').innerHTML=IC.x;$('#bBannerX').onclick=()=>{S.bannerOff=S.bannerMsg;$('#banner').classList.remove('show')};
-if(IN_FRAME)banner('You’re viewing this inside a preview window, which can’t play H.265 video or load map tiles. For full playback, <b>download the .html file and open it in Chrome</b>.');
 requestAnimationFrame(tick);
-window.__dcp={SA,S,L,P,get MAP(){return MAP},TL,ingest,progress,seekTo,play,pause,setMode,setFocus,swapTiles,setRate,decodeGpsBlock,parseMp4};
 })();
 </script>
 </body>
