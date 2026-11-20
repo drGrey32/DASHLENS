@@ -14,6 +14,8 @@ No account. No installation. No footage uploads. No sacrificing a goat to synchr
 
 It just sits there, quietly doing its fucking job. A concept apparently lost on an entire industry.
 
+![DASHLENS: every camera in sync, speed, map and G-sensor, a smooth timeline, zoom, custom layouts, and private in-browser playback](promo/overview.png)
+
 ## What does this magnificent bastard do?
 
 - **Synchronized multi-camera playback:** Witness stupidity from up to four different perspectives simultaneously.
