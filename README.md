@@ -96,3 +96,9 @@ No. It will make their incompetence considerably easier to navigate.
 **Open it. Scrub it. Investigate it. Judge silently.**
 
 *Human stupidity is inevitable. Shitty software doesn't have to be.*
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 drGrey32
