@@ -347,7 +347,7 @@ pre#diag{background:#0a0d11;border:1px solid var(--line);border-radius:8px;paddi
   <section class="sec">
     <h3>G-sensor</h3>
     <div class="srow col"><div class="sl"><b>Scale</b><small>Converts raw readings to g. Slide right for bigger movements, or leave on Auto.</small></div>
-      <div class="sline"><input type="range" id="sGsR" min="100" max="1024" step="4" title="Slide right to make movements look bigger"><b id="sGsV" class="sval">256 = 1 g</b><label class="chk"><input type="checkbox" id="sGsA"> Auto</label></div></div>
+      <div class="sline"><input type="range" id="sGsR" min="100" max="2048" step="4" title="Slide right to make movements look bigger"><b id="sGsV" class="sval">256 = 1 g</b><label class="chk"><input type="checkbox" id="sGsA"> Auto</label></div></div>
     <div class="srow"><div class="sl"><b>Smoothing</b><small id="sGRate">Reduces jitter in the readings.</small></div><div class="segsel" data-for="sGsm"><button data-v="off">Off</button><button data-v="low">Light</button><button data-v="med">Medium</button><button data-v="high">Strong</button></div></div>
   </section>
 
@@ -485,7 +485,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${k} · 
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.2.0';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.2.3';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -869,7 +869,11 @@ async function readSegTelemetry(seg,job){
   await pool(list.map((_,i)=>i),1,async i=>{if(job!==L.job||!got[i])return;const b=got[i];L.tele.blocks++;
     if(!L.tele.hexFile&&i===0){L.tele.hex=hexdump(b,512);L.tele.hexFile=seg.name;L.tele.hexN=n}
     if(L.tele.hexFile===seg.name&&i===mid&&!L.tele.hex2)L.tele.hex2=hexdump(b,512);
-    raws[i]=b;const r=decodeGpsBlock(b);if(r){out[i]=r;L.tele.decoded++;L.tele.fam[r.fam]=(L.tele.fam[r.fam]||0)+1}});
+    raws[i]=b;const r=decodeGpsBlock(b);if(r){out[i]=r;L.tele.decoded++;L.tele.fam[r.fam]=(L.tele.fam[r.fam]||0)+1;
+      // for the problem report: one block that has a position fix, and which NMEA sentence types the camera writes
+      if(r.valid&&r.lat!=null&&!L.tele.hexFix){let e=b.length;while(e>16&&!b[e-1])e--;L.tele.hexFix=hexdump(b,Math.min(1024,(e+15)&~15));L.tele.hexFixFile=seg.name;L.tele.hexFixI=i+1;L.tele.hexFixN=n}
+      if((L.tele.nmeaScan||0)<300&&r.valid){L.tele.nmeaScan=(L.tele.nmeaScan||0)+1;const ty=latin1(b,0,b.length).match(/\$G[A-Z]{4}/g);
+        if(ty){L.tele.nmeaTypes=L.tele.nmeaTypes||{};for(const x of new Set(ty))L.tele.nmeaTypes[x.slice(1)]=(L.tele.nmeaTypes[x.slice(1)]||0)+1}}}});
   // drop accelerometer readings that never change (not real sensor data)
   const ac=out.filter(s=>s&&s.acc);if(ac.length>3){const f=ac[0].acc;if(ac.every(s=>s.acc[0]===f[0]&&s.acc[1]===f[1]&&s.acc[2]===f[2]))ac.forEach(s=>s.acc=null)}
   // no G-sensor in the known spots: find where this camera keeps it (once), then read it from every block
@@ -993,7 +997,9 @@ function rebuildTele(final){
   if(m>2){
     let sc=+S.set.gScale;
     if(!sc){const mags=a.map(p=>Math.hypot(p.x,p.y,p.z));const M=median(mags);const C=[1,8,9.80665,10,16,32,64,100,128,256,512,1000,1024,2048,4096,8192,16384];let best=1000,bd=1e9;for(const c of C){const d=Math.abs(Math.log(M/c));if(d<bd){bd=d;best=c}}
-      const fam=a[0].fam;if(bd<Math.log(1.6)){sc=best;L.tele.gNote=`auto: ${+best.toFixed(3)} = 1 g (median |a| raw ${M.toFixed(1)})`}else{sc=fam==='novatek'?256:fam==='3gf'?100:1000;L.tele.gNote=`guessed ${sc} = 1 g (raw magnitude ${M.toFixed(1)} has no obvious 1 g; set it manually if needed)`}}
+      const fam=a[0].fam;if(bd<Math.log(1.6)){
+        // use the standard value when the readings sit right on it, otherwise the camera's own measured 1 g
+        sc=bd<Math.log(1.04)||a.length<20?best:(M>=100?Math.round(M):+M.toFixed(3));L.tele.gNote=`auto: ${+sc.toFixed(3)} = 1 g (median |a| raw ${M.toFixed(1)})`}else{sc=fam==='novatek'?256:fam==='3gf'?100:1000;L.tele.gNote=`guessed ${sc} = 1 g (raw magnitude ${M.toFixed(1)} has no obvious 1 g; set it manually if needed)`}}
     else L.tele.gNote='manual';
     L.tele.gScale=sc;
     const A={n:m,t:new Float64Array(m),x:new Float32Array(m),y:new Float32Array(m),z:new Float32Array(m),dx:new Float32Array(m),dy:new Float32Array(m),dz:new Float32Array(m),lon:null,lat:null,ev:null,grav:2};
@@ -1114,7 +1120,7 @@ async function metaJob(segs){
   if(!HEVC_OK&&L.segs.some(s=>s.meta&&/^(hvc1|hev1)$/.test(s.meta.codec)))banner('Your clips are H.265 (HEVC) and this browser can’t decode them. Use <b>Chrome</b> with hardware acceleration on (Edge on Windows also needs the HEVC Video Extensions).');
 }
 async function telemetryJob(){
-  const job=++L.job;L.teleDone=false;$('#dataNote').classList.remove('show');L.accPts=[];L.sideRaw=[];L.tz=null;for(const s of L.segs)s.tele=null;L.tele.blocks=0;L.tele.decoded=0;L.tele.fam={};L.tele.files=0;L.tele.filesWith=0;L.tele.src=new Set();L.tele.notes=[];L.accLay=undefined;L.tele.accNote='';L.tele.hex='';L.tele.hex2='';L.tele.hexFile='';L.tele.blockSize=0;
+  const job=++L.job;L.teleDone=false;$('#dataNote').classList.remove('show');L.accPts=[];L.sideRaw=[];L.tz=null;for(const s of L.segs)s.tele=null;L.tele.blocks=0;L.tele.decoded=0;L.tele.hexFix=null;L.tele.nmeaScan=0;L.tele.nmeaTypes=null;L.tele.fam={};L.tele.files=0;L.tele.filesWith=0;L.tele.src=new Set();L.tele.notes=[];L.accLay=undefined;L.tele.accNote='';L.tele.hex='';L.tele.hex2='';L.tele.hexFile='';L.tele.blockSize=0;
   const keys=L.keys;if(!keys.length){progress(null);return}
   const withAtom=keys.filter(k=>L.chans.get(k).all.some(s=>s.meta&&(s.meta.gps&&s.meta.gps.length||s.meta.txt)));
   let order=withAtom.slice();
@@ -1640,10 +1646,10 @@ class AccPanel{
     else for(const [w,v,col] of parts){const s=`${w} ${v.toFixed(2)} g`;c.fillStyle=col;c.fillText(s,x,ry);x+=c.measureText(s).width+14}
     if(a&&a.ev>=0.3){c.font='700 11px system-ui';c.textAlign='right';c.fillStyle=GCOL.brk;c.fillText(a.ev>=0.5?'HARD':'FIRM',W-10,ry)}
     const top=ry+10,wide=W>(H-top)*1.7;let bs,bx,by,gx,gy,gw,gh;
-    const VW=40;   // room for the vertical gauge to the right of the ball
-    if(wide){bs=Math.min(H-top-6,W*0.46-VW);bx=4;by=top+(H-top-bs)/2;gx=bx+bs+VW+12;gy=top+4;gw=W-gx-10;gh=H-gy-4}
-    else{bs=Math.min(W-10-VW,(H-top)*0.58);bx=(W-bs-VW)/2;by=top;gx=10;gy=by+bs+6;gw=W-20;gh=H-gy-4}
-    if(bs>70){this.ball(c,bx,by,bs,A,T,a);if(A.vert)this.vgauge(c,bx+bs+4,by,VW-6,bs,A,T,a)}
+    const VW=A.vert?34:0,vx=W-VW-8;   // vertical gauge sits against the right edge
+    if(wide){bs=Math.min(H-top-6,W*0.46);bx=4;by=top+(H-top-bs)/2;gx=bx+bs+12;gy=top+4;gw=vx-gx-10;gh=H-gy-4}
+    else{bs=Math.min(W-10-2*(VW+8),(H-top)*0.58);bx=(W-bs)/2;by=top;gx=10;gy=by+bs+6;gw=W-20;gh=H-gy-4}
+    if(bs>70){this.ball(c,bx,by,bs,A,T,a);if(VW)this.vgauge(c,vx,by,VW,bs,A,T,a)}
     if(gh>56&&gw>110)this.lanes(c,gx,gy,gw,gh,A,T);
   }
   ball(c,x,y,s,A,T,a){
@@ -1684,7 +1690,6 @@ class AccPanel{
     if(a){const v=clamp(a.vert/FULL,-1,1),py=cy-v*R,col=Math.abs(a.vert)<0.05?'#8b95a3':a.vert>0?GCOL.up:GCOL.dn;
       c.fillStyle=col+'99';const y0=Math.min(cy,py);c.fillRect(cx-tw/2+1,y0,tw-2,Math.abs(py-cy));
       c.globalAlpha=0.85;c.fillStyle=col;c.beginPath();c.arc(cx,py,6,0,Math.PI*2);c.fill();c.globalAlpha=1;c.strokeStyle='#000';c.lineWidth=1.5;c.stroke()}
-    c.save();c.translate(x+w+1,cy);c.rotate(Math.PI/2);c.font='600 9px system-ui';c.fillStyle='#5b6470';c.textAlign='center';c.fillText('VERTICAL',0,0);c.restore();
   }
   lanes(c,x,y,w,h,A,T){
     const half=this.win/2,t0=T-half,t1=T+half,i0=Math.max(0,bsearch(A.t,t0,A.n)),i1=Math.min(A.n-1,bsearch(A.t,t1,A.n)+1);
@@ -1820,6 +1825,9 @@ function updateDiag(full){
   lines.push('\n'+clipReport());
   if(t.hex)lines.push(`\nTelemetry block 1 of ${t.hexN} (${t.hexFile}, declared size ${t.blockSize} B):\n${t.hex}`);
   if(t.hex2)lines.push(`Block ${(t.hexN>>1)+1} of ${t.hexN}:\n${t.hex2}`);
+  if(t.nmeaTypes)lines.push('\nNMEA sentences in blocks with a fix: '+Object.entries(t.nmeaTypes).map(([k,v])=>`${k}×${v}`).join(', '));
+  if(t.hexFix)lines.push(`\nBlock with a GPS fix: ${t.hexFixI} of ${t.hexFixN} (${t.hexFixFile}):\n${t.hexFix}`);
+  else if(t.hex)lines.push('\nNo block with a GPS fix was found.');
   $('#diag').textContent=lines.join('\n');
 }
 function clipReport(){
@@ -1847,9 +1855,9 @@ function bindSettings(){
   for(const id of ['#sGf','#sGr'])for(const [v,n] of [['auto','Automatic'],['+x','+X'],['-x','−X'],['+y','+Y'],['-y','−Y'],['+z','+Z'],['-z','−Z']]){const o=el('option');o.value=v;o.textContent=n;$(id).appendChild(o)}
   bindSel('#sSpdU','spdUnit',rebuildTele);bindSel('#sGf','gFwd',rebuildTele);bindSel('#sGr','gRight',rebuildTele);
   {const r=$('#sGsR'),v=$('#sGsV'),a=$('#sGsA');let tm=0;
-    const show=()=>{const auto=S.set.gScale==='auto';a.checked=auto;r.disabled=auto;const val=auto?(L.tele.gScale||256):+S.set.gScale;r.value=1124-clamp(val,100,1024);v.textContent=`${+(+val).toFixed(1)} = 1 g`;r.style.opacity=auto?0.45:1};
-    r.oninput=()=>{const val=1124-r.value;S.set.gScale=String(val);a.checked=false;r.disabled=false;r.style.opacity=1;v.textContent=`${val} = 1 g`;save();clearTimeout(tm);tm=setTimeout(rebuildTele,60)};
-    a.onchange=()=>{S.set.gScale=a.checked?'auto':String(1124-r.value);save();rebuildTele();show()};
+    const show=()=>{const auto=S.set.gScale==='auto';a.checked=auto;r.disabled=auto;const val=auto?(L.tele.gScale||256):+S.set.gScale;r.value=2148-clamp(val,100,2048);v.textContent=`${+(+val).toFixed(1)} = 1 g`;r.style.opacity=auto?0.45:1};
+    r.oninput=()=>{const val=2148-r.value;S.set.gScale=String(val);a.checked=false;r.disabled=false;r.style.opacity=1;v.textContent=`${val} = 1 g`;save();clearTimeout(tm);tm=setTimeout(rebuildTele,60)};
+    a.onchange=()=>{S.set.gScale=a.checked?'auto':String(2148-r.value);save();rebuildTele();show()};
     gsShow=show;show()}
   const ms=$('#sMap');for(const k in MAPSRC){const o=el('option');o.value=k;o.textContent=MAPSRC[k].name;ms.appendChild(o)}bindSel('#sMap','mapSrc',()=>MAP&&MAP.setSource(S.set.mapSrc));
   $('#bReset').onclick=e=>{const b=e.currentTarget;if(!b._arm){b._arm=1;b.textContent='Click again to reset';setTimeout(()=>{b._arm=0;b.textContent='Reset'},3000);return}try{localStorage.removeItem('dashlens.settings')}catch(x){}location.reload()};
