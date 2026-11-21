@@ -485,7 +485,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${k} · 
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.1.0';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.2.0';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -1012,6 +1012,9 @@ function rebuildTele(final){
     const sm=({off:[0,0],low:[120,1],med:[250,2],high:[600,2]})[S.set.gSmooth]||[120,1];
     const smo=v=>{let o=v;for(let k=0;k<sm[1];k++)o=smoothSeries(A.t,o,sm[0]);return o};
     A.lon=smo(rl);A.lat=smo(rt);
+    // vertical: the remaining axis, signed so that positive means the car is pushed upwards (a bump)
+    {const v=[0,1,2].find(k=>k!==o.f[0]&&k!==o.r[0])??A.grav,R=[A.x,A.y,A.z][v];let sum=0;for(let i=0;i<m;i++)sum+=R[i];
+     const sg=sum<0?-1:1,rv=new Float32Array(m);for(let i=0;i<m;i++)rv[i]=sg*D[v][i];A.vert=smo(rv)}
     A.ev=new Float32Array(m);for(let i=0;i<m;i++)A.ev[i]=Math.hypot(A.lon[i],A.lat[i]);
     {const dts=[];for(let i=1;i<m;i+=Math.max(1,Math.floor(m/4000))){const d=A.t[i]-A.t[i-1];if(d>0&&d<5000)dts.push(d)}A.rate=dts.length?1000/median(dts):0}
     A.ver=(L.accVer=(L.accVer||0)+1);
@@ -1316,7 +1319,7 @@ function gpsAt(T){
     if(r&&seg&&r.src&&r.src.ch===seg.ch&&r.src.group!==seg.group)r=null}
   return r}
 function accAt(T){const A=L.A;if(!A)return null;const i=bsearch(A.t,T,A.n);if(i<0||i>=A.n)return null;const j=Math.min(i+1,A.n-1);const gap=A.t[j]-A.t[i];if(T-A.t[i]>3000)return null;
-  const f=gap>0&&gap<3000?(T-A.t[i])/gap:0;const l=(a)=>a[i]+(a[j]-a[i])*f;return {lon:l(A.lon),lat:l(A.lat),ev:l(A.ev)}}
+  const f=gap>0&&gap<3000?(T-A.t[i])/gap:0;const l=(a)=>a[i]+(a[j]-a[i])*f;return {lon:l(A.lon),lat:l(A.lat),ev:l(A.ev),vert:A.vert?l(A.vert):0}}
 let hudCache={};
 function setTxt(id,v){if(hudCache[id]!==v){hudCache[id]=v;const e=document.getElementById(id);if(e)e.innerHTML=v}}
 function updateHUD(){
@@ -1614,7 +1617,7 @@ class MiniMap{
 /* =====================================================================
    G-sensor panel
    ===================================================================== */
-const GCOL={acc:'#47d18c',brk:'#ff5d5d',lt:'#35c3d6',rt:'#a18bff'};
+const GCOL={acc:'#47d18c',brk:'#ff5d5d',lt:'#35c3d6',rt:'#a18bff',up:'#ffb020',dn:'#f08a3c'};
 class AccPanel{
   constructor(tile){this.tile=tile;const tin=$('.tin',tile);tin.style.background='#0b0e12';this.cv=el('canvas','fill');tin.appendChild(this.cv);this.ctx=this.cv.getContext('2d');this.win=20000;this.last=-1;
     new ResizeObserver(()=>this.resize()).observe(tin);
@@ -1629,16 +1632,18 @@ class AccPanel{
     // plain-language readout
     const parts=[];
     if(a){if(Math.abs(a.lon)>=0.05)parts.push([a.lon>0?'Speeding up':'Braking',Math.abs(a.lon),a.lon>0?GCOL.acc:GCOL.brk]);
-      if(Math.abs(a.lat)>=0.05)parts.push([a.lat>0?'Turning right':'Turning left',Math.abs(a.lat),a.lat>0?GCOL.rt:GCOL.lt])}
+      if(Math.abs(a.lat)>=0.05)parts.push([a.lat>0?'Turning right':'Turning left',Math.abs(a.lat),a.lat>0?GCOL.rt:GCOL.lt]);
+      if(Math.abs(a.vert)>=0.1)parts.push(['Bump',Math.abs(a.vert),a.vert>0?GCOL.up:GCOL.dn])}
     const ry=46;let x=10;c.font='600 13px system-ui';c.textAlign='left';
     if(!a){c.fillStyle='#5b6470';c.fillText('No G-sensor reading here',x,ry)}
     else if(!parts.length){c.fillStyle='#8b95a3';c.fillText('Steady',x,ry)}
     else for(const [w,v,col] of parts){const s=`${w} ${v.toFixed(2)} g`;c.fillStyle=col;c.fillText(s,x,ry);x+=c.measureText(s).width+14}
     if(a&&a.ev>=0.3){c.font='700 11px system-ui';c.textAlign='right';c.fillStyle=GCOL.brk;c.fillText(a.ev>=0.5?'HARD':'FIRM',W-10,ry)}
     const top=ry+10,wide=W>(H-top)*1.7;let bs,bx,by,gx,gy,gw,gh;
-    if(wide){bs=Math.min(H-top-6,W*0.46);bx=4;by=top+(H-top-bs)/2;gx=bx+bs+12;gy=top+4;gw=W-gx-10;gh=H-gy-4}
-    else{bs=Math.min(W-10,(H-top)*0.58);bx=(W-bs)/2;by=top;gx=10;gy=by+bs+6;gw=W-20;gh=H-gy-4}
-    if(bs>70)this.ball(c,bx,by,bs,A,T,a);
+    const VW=40;   // room for the vertical gauge to the right of the ball
+    if(wide){bs=Math.min(H-top-6,W*0.46-VW);bx=4;by=top+(H-top-bs)/2;gx=bx+bs+VW+12;gy=top+4;gw=W-gx-10;gh=H-gy-4}
+    else{bs=Math.min(W-10-VW,(H-top)*0.58);bx=(W-bs-VW)/2;by=top;gx=10;gy=by+bs+6;gw=W-20;gh=H-gy-4}
+    if(bs>70){this.ball(c,bx,by,bs,A,T,a);if(A.vert)this.vgauge(c,bx+bs+4,by,VW-6,bs,A,T,a)}
     if(gh>56&&gw>110)this.lanes(c,gx,gy,gw,gh,A,T);
   }
   ball(c,x,y,s,A,T,a){
@@ -1665,6 +1670,21 @@ class AccPanel{
     if(a){const [px,py]=P2(a.lon,a.lat);const col=a.ev<0.05?'#8b95a3':Math.abs(a.lon)>=Math.abs(a.lat)?(a.lon>0?GCOL.acc:GCOL.brk):(a.lat>0?GCOL.rt:GCOL.lt);
       c.strokeStyle=col;c.lineWidth=2;c.beginPath();c.moveTo(cx,cy);c.lineTo(px,py);c.stroke();c.globalAlpha=0.85;c.fillStyle=col;c.beginPath();c.arc(px,py,6,0,Math.PI*2);c.fill();c.globalAlpha=1;c.strokeStyle='#000';c.lineWidth=1.5;c.stroke()}
     car(false);
+  }
+  // vertical (up/down) force on the same ±0.5 g scale as the ball: bumps, potholes, speed humps
+  vgauge(c,x,y,w,s,A,T,a){
+    const R=s/2-15,FULL=0.5,cy=y+s/2,cx=x+w/2,tw=8,top=cy-R,bot=cy+R;
+    c.fillStyle='#ffffff0d';roundRect(c,cx-tw/2,top,tw,bot-top,4);c.fill();
+    c.strokeStyle='#ffffff22';c.lineWidth=1;
+    for(const g of [-0.5,-0.25,0,0.25,0.5]){const yy=cy-R*g/FULL;c.beginPath();c.moveTo(cx-tw/2-(g?2:4),yy+.5);c.lineTo(cx+tw/2+(g?2:4),yy+.5);c.strokeStyle=g?'#ffffff22':'#ffffff55';c.stroke()}
+    c.font='600 10px system-ui';c.textAlign='center';c.fillStyle=GCOL.up;c.fillText('UP',cx,y+10);c.fillStyle=GCOL.dn;c.fillText('DOWN',cx,y+s-2);
+    // fading trail of the last 2.5 s
+    const j0=Math.max(0,bsearch(A.t,T-2500,A.n)),j1=bsearch(A.t,T,A.n);
+    for(let i=j0;i<=j1;i++){if(i<0)continue;const f=(A.t[i]-(T-2500))/2500,v=clamp(A.vert[i]/FULL,-1,1);c.fillStyle=`rgba(255,176,32,${0.06+0.3*f})`;c.beginPath();c.arc(cx,cy-v*R,2.2,0,Math.PI*2);c.fill()}
+    if(a){const v=clamp(a.vert/FULL,-1,1),py=cy-v*R,col=Math.abs(a.vert)<0.05?'#8b95a3':a.vert>0?GCOL.up:GCOL.dn;
+      c.fillStyle=col+'99';const y0=Math.min(cy,py);c.fillRect(cx-tw/2+1,y0,tw-2,Math.abs(py-cy));
+      c.globalAlpha=0.85;c.fillStyle=col;c.beginPath();c.arc(cx,py,6,0,Math.PI*2);c.fill();c.globalAlpha=1;c.strokeStyle='#000';c.lineWidth=1.5;c.stroke()}
+    c.save();c.translate(x+w+1,cy);c.rotate(Math.PI/2);c.font='600 9px system-ui';c.fillStyle='#5b6470';c.textAlign='center';c.fillText('VERTICAL',0,0);c.restore();
   }
   lanes(c,x,y,w,h,A,T){
     const half=this.win/2,t0=T-half,t1=T+half,i0=Math.max(0,bsearch(A.t,t0,A.n)),i1=Math.min(A.n-1,bsearch(A.t,t1,A.n)+1);
