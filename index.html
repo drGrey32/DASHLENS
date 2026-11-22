@@ -485,12 +485,12 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${k} · 
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.2.3';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.3.0';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
 const L={segs:[],chans:new Map(),keys:[],spans:[],spanC:[],tMin:0,tMax:0,cTot:0,gapW:0,
-  side:[],sideRaw:[],accPts:[],G:null,A:null,tz:null,deepCh:new Set(),job:0,
+  side:[],sideRaw:[],accPts:[],G:null,A:null,tz:null,deepCh:new Set(),job:0,dupes:{hidden:[],edited:[]},
   tele:{blocks:0,decoded:0,files:0,filesWith:0,fam:{},hex:'',hexFile:'',notes:[],spdFac:null,spdNote:'',gScale:null,gNote:'',src:new Set()}};
 
 function mkTime(Y,M,D,h,mi,s){Y=+Y;M=+M;D=+D;h=+h;mi=+mi;s=+s;if(M<1||M>12||D<1||D>31||h>23||mi>59||s>59)return null;return Date.UTC(Y,M-1,D,h,mi,s)}
@@ -499,8 +499,11 @@ const CH_NAME={F:'Front',R:'Rear',I:'Interior',S:'Side'};
 // Understands e.g. Vantrue 20250314_101500_00012_N_A, Viofo 2024_0315_101500_0012F / …PF, BlackVue 20190415_121653_NF / _ER / _PR,
 // Thinkware REC_2020_01_01_12_00_00_F / EVT_… / MOT_…, Nextbase 240915_143027_001_FH, 70mai NO20230101-120000-000123F / EV… / PA…,
 // Garmin GRMN0001 (time from inside the file), files in Front/Rear folders, and plain single-camera names.
+// Names that file managers give to copies: "x (1)", "x - Copy", "x - Copy (2)", "x copy 2", "x_copy" (and a few other languages).
+const COPY_RE=/(?:\s*\(\d{1,3}\)|(?:\s+-\s+|\s+|_|-)(?:copy|kopie|copie|copia|kopia)(?:\s*\(\d{1,3}\)|\s+\d{1,3})?)$/i;
+function stripCopy(stem){let s=stem,c=false;for(let i=0;i<3&&COPY_RE.test(s);i++){s=s.replace(COPY_RE,'');c=true}return {s,c}}
 function parseName(name,path){
-  const stem=name.replace(/\.[^.]+$/,'');let t=null,m;
+  const sc=stripCopy(name.replace(/\.[^.]+$/,'')),stem=sc.s;let t=null,m;
   m=stem.match(/(20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})[-_. T]?(\d{2})[-_.:]?(\d{2})[-_.:]?(\d{2})/);
   if(m)t=mkTime(m[1],m[2],m[3],m[4],m[5],m[6]);
   if(t==null){m=stem.match(/(?:^|\D)(\d{2})(\d{2})(\d{2})[-_ ]?(\d{2})(\d{2})(\d{2})(?!\d)/);if(m)t=mkTime('20'+m[1],m[2],m[3],m[4],m[5],m[6])}
@@ -515,13 +518,13 @@ function parseName(name,path){
   if(!cat){const up=stem.toUpperCase();
     if(/_E_[A-Z]$/.test(up)||/^(EVT|EVENT|EV|EMER|EMR|SOS|LOCK|LOCKED|PROT|MAN|MANUAL|INC|IMP|SHK)(?=[-_ \d])/.test(up))cat='event';
     else if(/_P_[A-Z]$/.test(up)||/^(PARK|PARKING|PRK|PA|PAR|MOT|MOTION|TL|TIMELAPSE)(?=[-_ \d])/.test(up))cat='parking'}
-  return {t,ch,cat,stem,group}}
+  return {t,ch,cat,stem,group,copyName:sc.c}}
 function catOf(path){const p=path.toLowerCase().split('/').slice(0,-1).join('/');if(/(event|emer|lock|protect|manual|\bro\b|sos|crash|urgent|evt)/.test(p))return 'event';if(/park/.test(p))return 'parking';return 'normal'}
 function segURL(s){if(!s.url)s.url=URL.createObjectURL(s.file);return s.url}
 function resetLibrary(){
   for(const s of L.segs)if(s.url)URL.revokeObjectURL(s.url);
   for(const p of P.values())p.destroy();P.clear();
-  if(MAP)MAP.centered=false;L.segs=[];L.chans=new Map();L.keys=[];L.spans=[];L.side=[];L.sideRaw=[];L.accPts=[];L.gpsCh=null;L.G=null;L.A=null;L.tz=null;L.deepCh=new Set();L.job++;
+  if(MAP)MAP.centered=false;L.segs=[];L.chans=new Map();L.keys=[];L.spans=[];L.side=[];L.sideRaw=[];L.accPts=[];L.gpsCh=null;L.G=null;L.A=null;L.tz=null;L.deepCh=new Set();L.dupes={hidden:[],edited:[]};L.job++;
   L.tele={blocks:0,decoded:0,files:0,filesWith:0,fam:{},hex:'',hexFile:'',notes:[],spdFac:null,spdNote:'',gScale:null,gNote:'',src:new Set()};
 }
 
@@ -1033,7 +1036,7 @@ function rebuildTele(final){
    ===================================================================== */
 function banner(msg){if(S.bannerOff===msg)return;$('#bannerT').innerHTML=msg;$('#banner').classList.add('show');S.bannerMsg=msg}
 // loading status: a card over the videos (can be hidden to a small pill in the top bar)
-const PSTEP={scan:['Finding your videos',''],clips:['Reading clip details',''],index:['Step 1 of 2: Indexing clips','You can start watching now. Scrubbing gets smoother as clips are indexed.'],
+const PSTEP={scan:['Finding your videos',''],dupes:['Checking for duplicate copies',''],clips:['Reading clip details',''],index:['Step 1 of 2: Indexing clips','You can start watching now. Scrubbing gets smoother as clips are indexed.'],
   look:['Step 2 of 2: Looking for GPS and G-sensor data','You can keep watching. The map and G-sensor appear when this finishes.'],gps:['Step 2 of 2: Reading GPS and G-sensor data','You can keep watching. The map and G-sensor appear when this finishes.']};
 const fmtN=n=>n.toLocaleString();
 function progress(kind,frac,d,n){const p=$('#prog'),c=$('#loadCard');if(kind==null){p.classList.remove('show');c.classList.remove('show');return}
@@ -1081,32 +1084,75 @@ function unstack(segs){const by=new Map();for(const x of segs){if(!by.has(x.ch))
   for(const a of by.values()){a.sort((p,q)=>p.start-q.start||p.name.localeCompare(q.name,undefined,{numeric:true}));
     for(let i=1;i<a.length;i++){const pv=a[i-1],pe=pv.start+(pv.dur||60)*1000;if(a[i].start<pe-2000){a[i].start=a[i].start0=pe;a[i].tsrc+='+seq'}}}}
 async function resolveUnnamed(fresh){
-  const noT=fresh.filter(x=>x.start==null),noCh=fresh.filter(x=>!x.chSrc),need=[...new Set([...noT,...noCh])].filter(x=>!x.meta);
-  if(!noT.length&&noCh.length<2)return;
-  if(need.length){progress('clips',0,0,need.length);let d=0;await pool(need,6,async x=>{await metaOf(x);++d;progress('clips',d/need.length,d,need.length)})}
-  for(const x of noT)x.start=x.start0=fallbackTime(x);
-  const nc=new Set(noCh),taken=new Set(L.segs.filter(x=>!nc.has(x)).map(x=>x.ch));
-  if(noCh.length>=2)groupCameras(noCh,taken);
-  if(noT.length)unstack(noT);
-  progress(null)}
+  const noT=fresh.filter(x=>x.start==null),noCh=fresh.filter(x=>!x.chSrc);
+  if(noT.length||noCh.length>=2){const need=[...new Set([...noT,...noCh])].filter(x=>!x.meta);
+    if(need.length){progress('clips',0,0,need.length);let d=0;await pool(need,6,async x=>{await metaOf(x);++d;progress('clips',d/need.length,d,need.length)})}
+    for(const x of noT)x.start=x.start0=fallbackTime(x)}
+  // copies go before the camera and sequence guesses, so they can't become an extra camera or repeated footage
+  fresh=await dedupeCopies(fresh);const live=new Set(fresh);
+  const noT2=noT.filter(x=>live.has(x)),noCh2=noCh.filter(x=>live.has(x));
+  const nc=new Set(noCh2),taken=new Set(L.segs.filter(x=>!nc.has(x)).map(x=>x.ch));
+  if(noCh2.length>=2)groupCameras(noCh2,taken);
+  if(noT2.length)unstack(noT2);
+  progress(null);return fresh}
+/* ---------- the same recording loaded more than once (backup folders, "x (1).mp4", unfinished copies) ---------- */
+// The extra copies are only left off the timeline. Nothing on disk is changed: the page has read access only.
+const playable=s=>!!(s.meta&&s.meta.moov&&s.meta.dur>0.5&&!s.meta.err);
+const ctOf=s=>s.meta&&s.meta.ctime>2082844800?s.meta.ctime:0;
+// <0 when a is the copy to show: one that plays, then the longest, the largest, the one without a copy name, the shortest path
+function betterCopy(a,b){const pa=playable(a),pb=playable(b);if(pa!==pb)return pa?-1:1;
+  const da=pa?a.meta.dur:0,db=pb?b.meta.dur:0;if(Math.abs(da-db)>0.5)return db-da;
+  if(a.file.size!==b.file.size)return b.file.size-a.file.size;
+  if(a.copyName!==b.copyName)return a.copyName?1:-1;
+  return a.path.length-b.path.length||a.path.localeCompare(b.path)}
+async function sameBytes(a,b){const z=a.file.size;if(z!==b.file.size)return false;const n=Math.min(65536,z);
+  for(const o of new Set([0,Math.max(0,Math.floor((z-n)/2))])){const [x,y]=await Promise.all([rd(a.file,o,n),rd(b.file,o,n)]);if(x.length!==y.length)return false;for(let i=0;i<x.length;i++)if(x[i]!==y[i])return false}
+  return true}
+// 'copy': the same recording; 'edited': same name and time but another recording clock (kept, and listed in Diagnostics); null: different
+async function copyVerdict(k,x){
+  const known=!!(k.chSrc&&x.chSrc);if(known&&k.ch!==x.ch)return null;
+  const sameName=k.nkey===x.nkey;if(!sameName&&(!known||k.cat!==x.cat))return null;
+  const ca=ctOf(k),cb=ctOf(x),near=k.start!=null&&x.start!=null&&Math.abs(k.start-x.start)<=2000;
+  if(ca&&cb&&ca!==cb)return sameName&&near&&k.tsrc==='name'&&x.tsrc==='name'?'edited':null;
+  if(!(ca&&cb)&&!near)return null;
+  if(sameName||(ca&&cb))return 'copy';
+  return await sameBytes(k,x)?'copy':null}
+async function dedupeCopies(fresh){
+  if(fresh.length<2)return fresh;
+  // candidates: the same name (after removing copy suffixes), or the same camera and time from the name
+  const par=new Map(),root=x=>{while(par.get(x)!==x){par.set(x,par.get(par.get(x)));x=par.get(x)}return x},first=new Map();
+  for(const s of fresh){par.set(s,s);for(const k of ['n:'+s.nkey,s.chSrc&&s.tsrc==='name'?`c:${s.ch}|${s.start}`:null]){if(!k)continue;const o=first.get(k);if(o)par.set(root(s),root(o));else first.set(k,s)}}
+  const groups=new Map();for(const s of fresh){const r=root(s);if(!groups.has(r))groups.set(r,[]);groups.get(r).push(s)}
+  const multi=[...groups.values()].filter(g=>g.length>1);if(!multi.length)return fresh;
+  const need=multi.flat().filter(s=>!s.meta);
+  if(need.length){progress('dupes',0,0,need.length);let d=0;await pool(need,6,async s=>{await metaOf(s);++d;progress('dupes',d/need.length,d,need.length)})}
+  const hide=new Set();
+  for(const g of multi){g.sort(betterCopy);const keep=[];
+    for(const x of g){let of=null,ed=null;
+      for(const k of keep){const v=await copyVerdict(k,x);if(v==='copy'){of=k;break}if(v==='edited'&&!ed)ed=k}
+      if(of){hide.add(x);L.dupes.hidden.push({seg:x,of});if(of.cat==='normal'&&x.cat!=='normal')of.cat=x.cat}else{keep.push(x);if(ed)L.dupes.edited.push({seg:x,of:ed})}}}
+  if(!hide.size)return fresh;
+  L.segs=L.segs.filter(s=>!hide.has(s));
+  return fresh.filter(s=>!hide.has(s))}
 async function ingest(items,replace){
   const vids=[],side=[];
   for(const it of items){const n=it.file.name;if(n.startsWith('.')||n.startsWith('._'))continue;if(VIDEO_EXT.test(n))vids.push(it);else if(SIDE_EXT.test(n))side.push(it)}
   if(!vids.length&&!side.length){progress(null);toast('No dashcam videos found there. Expected .MP4 / .MOV files.');return}
   if(replace)S.loadHidden=false;
   if(replace&&vids.length){pause();resetLibrary()}
-  const known=new Set(L.segs.map(s=>s.path+'|'+s.file.size));const fresh=[];let nv=0,lastY=performance.now();
+  const known=new Set(L.segs.map(s=>s.path+'|'+s.file.size));let fresh=[];let nv=0,lastY=performance.now();
   for(const it of vids){if(++nv%100===0&&performance.now()-lastY>40){progress('scan',nv/vids.length,nv,vids.length);await new Promise(r=>setTimeout(r));lastY=performance.now()}const path=it.path||it.file.webkitRelativePath||it.file.name;const k=path+'|'+it.file.size;if(known.has(k))continue;known.add(k);
-    const p=parseName(it.file.name,path);const seg={file:it.file,path,name:it.file.name,ch:p.ch||'A',chSrc:p.ch?'name':null,tsrc:p.t!=null?'name':null,start:p.t,start0:p.t,corr:0,dur:null,durKnown:false,cat:p.cat||catOf(path),meta:null,url:null,group:p.group};
+    const p=parseName(it.file.name,path);const seg={file:it.file,path,name:it.file.name,nkey:(p.stem+'.'+((it.file.name.match(/\.([^.]+)$/)||[])[1]||'')).toLowerCase(),copyName:p.copyName,ch:p.ch||'A',chSrc:p.ch?'name':null,tsrc:p.t!=null?'name':null,start:p.t,start0:p.t,corr:0,dur:null,durKnown:false,cat:p.cat||catOf(path),meta:null,url:null,group:p.group};
     L.segs.push(seg);fresh.push(seg)}
-  L.side.push(...side);
-  await resolveUnnamed(fresh);
+  {const ks=new Set(L.side.map(x=>x.file.name+'|'+x.file.size));for(const x of side){const k=x.file.name+'|'+x.file.size;if(!ks.has(k)){ks.add(k);L.side.push(x)}}}
+  fresh=await resolveUnnamed(fresh);
   const first=!S.T||replace;
   rebuildModel();ensureTiles();applyLayout();buildTripSel();buildAudSel();buildChRows();
   $('#empty').classList.add('hide');
   if(first&&L.spans.length){S.T=L.spans[0].s;S.loadT=S.T;fitView()}
   TL.dirty=true;
-  adaptUI();toast(`Found ${L.segs.length} clip${L.segs.length>1?'s':''} from ${L.keys.length} camera${L.keys.length>1?'s':''}. Reading GPS…`);
+  const nd=L.dupes.hidden.length;
+  adaptUI();toast(`Found ${L.segs.length} clip${L.segs.length>1?'s':''} from ${L.keys.length} camera${L.keys.length>1?'s':''}.${nd?` Hid ${nd} duplicate cop${nd>1?'ies':'y'} (your files are not changed).`:''} Reading GPS…`,nd?5000:2800);
   await metaJob(fresh);
   telemetryJob();
 }
@@ -1803,6 +1849,9 @@ function updateDiag(full){
   const t=L.tele,lines=[`DashLens ${VERSION} · ${navigator.userAgent}`];
   const cnt=L.keys.map(k=>`${k}:${L.chans.get(k).all.length}`).join(' ');
   lines.push(`Clips: ${L.segs.length} (${cnt||'-'}), sidecar files: ${L.side.length}`);
+  {const D=L.dupes,lst=(a,how)=>{for(const d of a.slice(0,40))lines.push(`  ${d.seg.path}  (${how} ${d.of.path})`);if(a.length>40)lines.push(`  … and ${a.length-40} more`)};
+   if(D.hidden.length){lines.push(`Duplicate copies hidden from the timeline: ${D.hidden.length} (files on disk are not changed)`);lst(D.hidden,'copy of')}
+   if(D.edited.length){lines.push(`Possible edited copies, kept: ${D.edited.length} (same name and time, but a different recording clock inside the file)`);lst(D.edited,'compare with')}}
   {const f=new Map();for(const x of L.segs){const d=x.path.split('/').slice(0,-1).join('/')||'(top level)';f.set(d,(f.get(d)||0)+1)}
    lines.push('Folders:');for(const [d,n] of [...f].sort((a,b)=>a[0].localeCompare(b[0])))lines.push(`  ${d}  ${n} clip${n>1?'s':''}`);
    const tc={},cc2={};for(const x of L.segs){tc[x.tsrc||'?']=(tc[x.tsrc||'?']||0)+1;cc2[x.chSrc||'default']=(cc2[x.chSrc||'default']||0)+1}

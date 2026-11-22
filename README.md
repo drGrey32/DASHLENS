@@ -20,6 +20,7 @@ It just sits there, quietly doing its fucking job. A concept apparently lost on 
 
 - **Synchronized multi-camera playback:** Witness stupidity from up to four different perspectives simultaneously.
 - **Automatic file organization:** Drop in your entire SD card. It'll sort through the digital landfill itself.
+- **Duplicate detection:** Backup folders, `clip (1).mp4` and half-finished copies get hidden, so nothing plays twice. Your files on disk are never touched.
 - **Interactive GPS map:** See exactly where shit went sideways. Geographically.
 - **Speed and heading display:** Quantify questionable decisions.
 - **G-force visualization:** Observe the physical consequences of those decisions.
