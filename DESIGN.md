@@ -2,7 +2,8 @@
 
 These guidelines come from the design research of the OBD Inject app (`design/apex/RESEARCH.md` and
 `design/apex/research/*.md` in that project). Only the rules that apply to a dashcam viewer are here. Each rule shows
-its research ID in brackets, so you can find the source.
+its research ID in brackets, so you can find the source. Rules marked [R] come from DashLens's own research report,
+`reports/Premium UI UX sources verified.md`, which was checked against primary sources.
 
 ## 1. Purpose and users
 
@@ -45,6 +46,8 @@ The timeline is the centre of the product.
   stays the default.
 - **Jump to what matters** [INT-26]. "Previous event" and "Next event" controls, and an events list with the time,
   the peak g and the speed. This is the owner's main need after an incident.
+- **Telemetry on the same time axis** [R]. Speed and G-force are lanes of the timeline, with their names in the lane.
+- **Show the frame under the pointer** [R]. Hovering over the timeline shows a picture of that frame and its time.
 
 ## 4. Telemetry: speed, heading, map, G-sensor
 
@@ -55,6 +58,10 @@ The timeline is the centre of the product.
 - **No fake precision.** Show GPS speed as recorded ("82 km/h, GPS"), with no decimals. With no GPS fix, show "—",
   never 0.
 - **Units.** One visible setting (km/h or mph), from the locale by default.
+- **Draw only what was recorded** [R]. Break the route and the speed line where GPS was lost. Never smooth over a gap:
+  smoothed evidence looks more certain than it is.
+- **One colour, one meaning** [R]. Teal is GPS (speed, route, heading). Red is an event or a hard moment. Left and
+  right turns use blue and violet. Driving clips are a quiet grey, so that colour shows only meaning.
 - **Missing telemetry** [INT-23]. When a camera recorded no GPS or G-sensor data, the panel says so in one quiet
   line. It does not show an empty chart.
 
@@ -77,19 +84,24 @@ The timeline is the centre of the product.
 - **A blocked action says why and what to do** [INT-15]. "Fullscreen not allowed here" also says how to allow it.
 - **Prevent slips instead of reporting them** [INT-21]. When one recording type must stay on, disable its switch and
   give the reason beside it, instead of a toast after the click.
-- **Long actions** [INT-10]: exports and reports show progress and Cancel.
+- **Long actions** [INT-10]: exports and reports show progress and Cancel. Counted progress ("Step 2 of 5",
+  "9 of 14 clips"), never a skeleton screen for a process, and never a fake delay [R].
 
 ## 7. Keyboard and accessibility
 
 - **Every control works with the keyboard**, in a logical focus order, with a visible focus ring [WCAG 2.1.1, 2.4.7].
-- **Player shortcuts:** Space (play/pause), ← and → (one frame), J K L (speed), number keys (cameras), and "?" for a
-  list of all shortcuts. Every shortcut action is also a visible control [INT-1].
+- **Player shortcuts:** Space (play/pause), ← and → (one frame), Shift + ← → (5 s), J K L (speed), I and O (clip
+  start and end; Shift + I / O goes there), = and − (timeline zoom; Shift + Z shows all), E (next event), number keys
+  (cameras), and "?" for a list of all shortcuts. Every shortcut action is also a visible control [INT-1], and its key
+  is in the control's tooltip [R].
 - **Icon buttons have names** [INT-25]: an `aria-label` on each, and a visible label where there is space.
 - **Text size** [TEXT-2]: at least 12 px for all text that the user must read (file names, chart labels, legends).
   The layout still works at 200 % browser zoom.
-- **Contrast:** small grey text on the dark background reaches at least 4.5:1 [WCAG 1.4.3].
-- **Reduce motion:** with `prefers-reduced-motion`, no decorative animation. Playback and scrubbing never get
-  extra animation.
+- **Contrast:** small grey text on the dark background reaches at least 4.5:1 [WCAG 1.4.3]. This is the compliance
+  floor. The design targets are APCA [R]: primary text Lc 90, secondary text that people read Lc 75, short labels
+  Lc 60 at weight 500 or more. The dimmest grey is only for disabled text and placeholders.
+- **Reduce motion:** with `prefers-reduced-motion`, nothing moves or scales. State changes keep a short opacity fade
+  (about 120 ms), so that the change is still visible [R]. Playback and scrubbing never get extra animation.
 
 ## 8. Visual design
 
@@ -98,7 +110,16 @@ The timeline is the centre of the product.
 - **Few text sizes.** 4 or 5 roles: title, section, body, support, caption.
 - **Monospace only for data that people compare:** times, file names, values. Not for labels.
 - **No AI-slop decoration** (`ai-slop.md`, `anti-patterns.md`): no gradient glows, no emoji badges, no different
-  chip style for each feature.
+  chip style for each feature. Also [R]: no glass panels, no all-caps eyebrow labels, no monospace labels, no strings
+  of words joined by middle dots, no thin border with a wide shadow, one icon family with one stroke width.
+- **Closed sets of values** [R]: corner radii 4, 6, 8 and 12 px (and round for switches and dots); two shadow levels;
+  the five text roles only; weights 400 to 600. Neutral greys with no tint; surfaces differ by lightness, and a line
+  that carries meaning is at least #555 or the accent. `color-scheme: dark`.
+- **Type** [R]: IBM Plex Sans and IBM Plex Mono, embedded in the file, so that no font is downloaded. Digits have
+  equal width, so changing numbers do not move.
+- **The dark theme stays** [R], because it is right for video. "Near-black with one bright accent" is a listed
+  AI default, so DashLens's identity comes from the footage, the timeline and the evidence workflow, not from the
+  palette.
 
 ## 9. Privacy and trust
 
@@ -106,6 +127,8 @@ The timeline is the centre of the product.
   ("Map tiles are loaded from the internet. Your video stays on this computer.") and give a switch to turn the map
   off.
 - **One line in the app says that nothing is uploaded and nothing is tracked.** Keep it true for every new feature.
+- **Make the claim checkable** [R]. The "Private" status counts the internet requests from the browser's own log,
+  names their hosts, and tells the user how to check it in the browser's Network tab.
 - **No dark patterns** (ETHIC rules): no paid tier, no nags, no rating prompts, least of all after an incident.
 - **Calm words inside the app.** The README's humour fits the project page. In the app, the user may have just had a
   crash (PSY research on stress and trust).
@@ -118,6 +141,34 @@ This is the job that the product exists for.
   that can go to an insurer or the police.
 - **Incident summary:** date, time, place, speed, peak g, cameras and file names, as a page to print or save as PDF.
 - **Originals stay untouched.** Say so at the export step, so that users trust the output.
+- **An evidence package** [R] (NIST IR 8387, SWGDE, the UK dash cam portal): the working clip (re-encoded, say so),
+  byte-exact copies of the original files, a SHA-256 checksum of every file in a separate file, the GPS route as GPX,
+  and the summary with lossless (PNG) pictures. No enhancement, and no claim that the files will be accepted.
+- **Design the end** [R]. The export ends on a screen that stays: "Your evidence is saved", with each file, what it
+  is, and which files to send and which to keep.
+
+## 11. Motion [R]
+
+- **Nothing tied to the video clock animates**: the playhead, the time, the speed, the heading arrow and the map
+  marker update at once.
+- **Frequent actions do not animate**: keyboard actions, play, frame steps and seeks.
+- **Durations**: about 100 ms for press feedback, 125–200 ms for tooltips and small menus, 200–300 ms for dialogs and
+  drawers; exits are shorter than entrances. Animate only `transform` and `opacity`; never `transition: all`.
+- **Loading**: show a loader only after 150–300 ms, and keep it at least 300–500 ms, so it does not flash.
+
+## 12. States [R]
+
+Design every state of every screen: empty, first run, loading (counted), partly loaded, no GPS or G-sensor data,
+error (on the screen), offline, disabled with the reason, cancelled, success that stays, very many clips, long file
+names. A dialog takes the focus when it opens, keeps it inside, closes with Esc, and gives the focus back to the
+control that opened it.
+
+## 13. The incident flow [R]
+
+Find, review, save. After loading, propose the strongest moment and say why it was chosen ("0.64 g. Both cameras
+saved it as an event recording."). Its main button goes to 5 seconds before the event, paused. The clip range stays
+visible as a chip until it is cleared. The flow ends on the "Your evidence is saved" screen. Write this flow to be
+calm and plain: no jokes, no exclamation marks, no blame (GOV.UK error rules).
 
 ## Priorities
 
@@ -127,3 +178,5 @@ This is the job that the product exists for.
 4. Event types that read without colour.
 5. The map privacy line and a switch to turn the map off.
 6. Clip export and the incident summary.
+7. Not built yet [R]: reading Tesla's embedded telemetry (SEI); frame pins carried into the summary; a local
+   "resume where you left off"; a CSV export of the telemetry.

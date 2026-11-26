@@ -30,7 +30,9 @@ It just sits there, quietly doing its fucking job. A concept apparently lost on 
 - **Customizable camera layouts:** Resize, rearrange, zoom, mirror and flip things until your inner control freak achieves inner peace.
 - **Snapshots:** Preserve particularly distinguished moments of human incompetence.
 - **Jump to the events:** "Next event", "Previous event" and a list with the time, peak g and speed, so you don't scrub through 40 minutes of motorway to find the one second that matters.
-- **Save evidence:** Export the moment from every camera as one video file, with the time, speed and G-force on it, or make a printable incident summary for your insurer. Your original files stay untouched.
+- **Save evidence:** One click saves an evidence folder: the moment from every camera as one video file (with the time, speed and G-force on it), a printable incident summary, exact copies of the original files, the GPS route, and SHA-256 checksums of everything. Your original files stay untouched.
+- **Straight to the point:** After loading, DashLens shows the strongest moment in the footage and says why it picked it. Hover over the timeline to see the frame under the pointer.
+- **Privacy you can check:** The "Private" status counts every internet request the page makes, and tells you how to check it yourself.
 - **Local processing:** Your footage stays on your computer. Your questionable karaoke sessions are nobody else's business.
 
 ## Why pay when you can have it for free?
