@@ -34,7 +34,7 @@ It just sits there, quietly doing its fucking job. A concept apparently lost on 
 - **Straight to the point:** After loading, DashLens shows the strongest moment in the footage and says why it picked it. Hover over the timeline to see the frame under the pointer.
 - **Whole-drive overview:** A thin strip above the timeline shows all your footage, with events, pins and gaps. Click it to jump there. Zoom presets go from the whole drive down to 10 seconds.
 - **Numbers on the lanes:** The speed and G-force lanes show the value under the pointer. Shift + drag on the timeline selects a range and tells you its top speed, peak G-force and speed change, and the map shows that part of the route.
-- **Pins:** Press P to pin a moment and write a note on it. Pins, with a picture of the frame, go into the incident summary.
+- **Pins:** Press P to pin a moment, also while the video plays, and write a note on it. Each pin has a number, and the number is the same on the timeline, on the map and in the incident summary. The summary also has a picture of the frame.
 - **Pick up where you left off:** Open the same footage again and DashLens offers to go back to where you stopped, with your pins and clip range. This is kept in your browser only.
 - **Telemetry as CSV:** Speed, position, heading and G-force, one row for each reading the camera recorded, ready for a spreadsheet.
 - **Tesla support:** TeslaCam folders (RecentClips, SavedClips, SentryClips) with all cameras, and the speed, position, G-force, brake, turn signals, gear and Autopilot state that Tesla firmware 2025.44.25 or later writes into every frame.

@@ -73,8 +73,8 @@ The timeline is the centre of the product.
 - **One colour, one meaning** [R]. Teal is GPS (speed, route, heading). Coral and red are an event or a hard moment.
   Driving clips are a soft sky blue (`#79a8f2`): lively, but lighter and less saturated than any colour that carries a
   warning. Parking is sand. Left and right turns on the G-sensor are orchid pink (`#e89ad8`) and violet (`#a18bff`), so
-  no turn colour is the driving blue. The user's own pins are light grey with a round head, to differ by shape from
-  event triangles.
+  no turn colour is the driving blue. The user's own pins are light grey numbered tags (1, 2, 3 …), to differ by shape
+  from event triangles. A pin has the same number on the timeline, on the map and in the events list and summary.
 - **Car data when the car records it.** Tesla writes speed, position, G-force, brake, turn signals, gear and Autopilot
   state into every frame (firmware 2025.44.25 or later, HW3 or later). Read it from the file as the car wrote it, and
   say where it came from.
@@ -170,7 +170,9 @@ The timeline is the centre of the product.
   drawers and dialogs. A child radius is never larger than its parent's.
 - **Shadows:** two levels. Each starts with a 1 px ring at 12 % white, because a shadow alone does not show on
   the dark background.
-- **Icons:** one family, one stroke width. 16 px in 24 px controls and lists, 20 px in 32 px icon-only buttons.
+- **Icons:** one family, one stroke width (2 on the 24 px grid). 16 px in 24 px controls and lists, 20 px in 32 px
+  icon-only buttons.
+- **Active camera:** a 2 px accent outline on the main camera tile. Keys 1–9 select a camera; 0 shows the grid.
 - **Warnings** use an icon and words, never an amber or orange colour, because orange is the accent.
 
 ## 9. Privacy and trust
@@ -209,7 +211,8 @@ This is the job that the product exists for.
   marker update at once.
 - **Frequent actions do not animate**: keyboard actions, play, frame steps and seeks.
 - **Durations**: about 100 ms for press feedback, 125–200 ms for tooltips and small menus, 200–300 ms for dialogs and
-  drawers; exits are shorter than entrances. Animate only `transform` and `opacity`; never `transition: all`.
+  drawers; exits are shorter than entrances. Animate only `transform` and `opacity`; never `transition: all`. Progress bars
+  grow with `transform: scaleX()`, not `width`.
 - **Loading**: show a loader only after 150–300 ms, and keep it at least 300–500 ms, so it does not flash.
 - **Toasts** stay 6 s. Hover or focus stops the timer. A toast with an action stays until the user closes it.
 
