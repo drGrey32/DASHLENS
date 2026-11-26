@@ -215,12 +215,12 @@ body.dragover #empty .card,body.dragover #stage{outline:2px dashed var(--acc);ou
 #legend span{display:flex;align-items:center;gap:6px;white-space:nowrap}
 #legend .sw,#legend .evmark{margin-right:0}
 .sw{display:inline-block;width:14px;height:10px;border-radius:2px;flex:none;vertical-align:-1px;margin-right:6px}
-.sw-drive{background:#6b7078}
-.sw-park{background:repeating-linear-gradient(135deg,#3a3a3a 0 2.4px,#a3a3a3 2.4px 3.8px)}
-.sw-event{background:repeating-linear-gradient(90deg,#ff5d5d 0 3px,#6b1b1b 3px 5px)}
-.sw-speed{background:#35c3d64d;border-top:2px solid #35c3d6}
+.sw-drive{background:#8391b5;border-radius:3px}
+.sw-park{background:repeating-linear-gradient(135deg,#4a4436 0 2.4px,#c2b48f 2.4px 3.8px);border-radius:3px}
+.sw-event{background:repeating-linear-gradient(90deg,#f0786a 0 3px,#8a3a33 3px 5px);border-radius:3px}
+.sw-speed{background:linear-gradient(#5cc8c84d,#5cc8c80a);border-top:2px solid #5cc8c8}
 .sw.hatch{background:repeating-linear-gradient(135deg,#2a2a2a 0 2px,#141414 2px 4px);outline:1px solid #333333}
-.evmark{display:inline-block;width:12px;height:10px;flex:none;background:#ff5d5d;clip-path:polygon(0 0,100% 0,50% 100%);position:relative;margin-right:6px;vertical-align:0}
+.evmark{display:inline-block;width:12px;height:10px;flex:none;background:#f0786a;clip-path:polygon(0 0,100% 0,50% 100%);position:relative;margin-right:6px;vertical-align:0}
 .evmark:not(.clip)::after{content:"";position:absolute;inset:2px 3px 3.5px;background:var(--bg2);clip-path:polygon(0 0,100% 0,50% 100%)}
 @media (max-width:1100px){#tlKey .hint{display:none}}
 .btn.tx{padding:0 9px;gap:4px;font-size:12px}
@@ -2186,15 +2186,15 @@ function smoothArea(c,pts,base){let k=0;
 /* =====================================================================
    Timeline
    ===================================================================== */
-const CAT_COL={normal:'#6b7078',event:'#ff5d5d',parking:'#7d8fa8'},CAT_NAME={normal:'Driving',event:'Event recording',parking:'Parking recording'};
+const CAT_COL={normal:'#8391b5',event:'#f0786a',parking:'#c2b48f'},CAT_NAME={normal:'Driving',event:'Event recording',parking:'Parking recording'};
 const TL={cv:null,ctx:null,w:0,h:0,dpr:1,view:{c0:0,c1:1},dirty:true,user:false};
 function tlInit(){TL.cv=$('#tlc');TL.ctx=TL.cv.getContext('2d');new ResizeObserver(tlResize).observe($('#tl'));tlResize();
   const pat=(w,hh,fn)=>{const cv=document.createElement('canvas');cv.width=w;cv.height=hh;fn(cv.getContext('2d'));return TL.ctx.createPattern(cv,'repeat')};
   TL.hatch=pat(8,8,h=>{h.strokeStyle='#262626';h.lineWidth=2;h.beginPath();h.moveTo(-2,10);h.lineTo(10,-2);h.stroke()});
   // driving: solid · parking: diagonal stripes · event: vertical bars (they differ by shape, not only by colour)
   TL.pat={normal:CAT_COL.normal,
-    parking:pat(6,6,h=>{h.fillStyle='#3a3a3a';h.fillRect(0,0,6,6);h.strokeStyle='#a3a3a3';h.lineWidth=1.6;h.beginPath();h.moveTo(-1,7);h.lineTo(7,-1);h.moveTo(5,7);h.lineTo(7,5);h.moveTo(-1,1);h.lineTo(1,-1);h.stroke()}),
-    event:pat(5,4,h=>{h.fillStyle=CAT_COL.event;h.fillRect(0,0,5,4);h.fillStyle='#6b1b1b';h.fillRect(3,0,2,4)})};
+    parking:pat(6,6,h=>{h.fillStyle='#4a4436';h.fillRect(0,0,6,6);h.strokeStyle='#c2b48f';h.lineWidth=1.6;h.beginPath();h.moveTo(-1,7);h.lineTo(7,-1);h.moveTo(5,7);h.lineTo(7,5);h.moveTo(-1,1);h.lineTo(1,-1);h.stroke()}),
+    event:pat(5,4,h=>{h.fillStyle=CAT_COL.event;h.fillRect(0,0,5,4);h.fillStyle='#8a3a33';h.fillRect(3,0,2,4)})};
   const tl=$('#tl');
   tl.addEventListener('pointerdown',e=>{if(e.button!==0||!L.spans.length)return;saEnsure();tl.setPointerCapture(e.pointerId);S.wasPlaying=S.playing;if(S.playing){S.playing=false;for(const p of P.values())p.idle()}S.scrubbing=true;S.scrubExact=false;scrubTo(e)});
   tl.addEventListener('pointermove',e=>{hover(e);if(S.scrubbing)scrubTo(e)});
@@ -2263,24 +2263,24 @@ function drawTL(){
     if(A)addRange(A.t,A.n,(x,i)=>{if(A.ev[i]>ab[x])ab[x]=A.ev[i]});
     if(G){const mx=Math.max(60,G.max),base=top+band,brk=Math.max(2,6000*k);const runs=[];let cur=null,lx=-1e9;
       for(let x=0;x<cols;x++){if(sb[x]<0)continue;if(!cur||x-lx>brk){cur=[];runs.push(cur)}cur.push([x,base-sb[x]/mx*(band-2)]);lx=x}
-      for(const r of runs){c.beginPath();c.moveTo(r[0][0],base);for(const [x,y] of r)c.lineTo(x,y);c.lineTo(r[r.length-1][0],base);c.closePath();c.fillStyle='#35c3d62e';c.fill();
-        c.beginPath();r.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.strokeStyle='#35c3d6aa';c.lineWidth=1.2;c.stroke()}}
+      for(const r of runs){c.beginPath();c.moveTo(r[0][0],base);for(const [x,y] of r)c.lineTo(x,y);c.lineTo(r[r.length-1][0],base);c.closePath();{const gr=c.createLinearGradient(0,base-band,0,base);gr.addColorStop(0,'#5cc8c84d');gr.addColorStop(1,'#5cc8c808');c.fillStyle=gr}c.fill();
+        c.beginPath();r.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.strokeStyle='#5cc8c8';c.lineWidth=1.5;c.lineJoin='round';c.stroke()}}
     if(A){c.fillStyle='#ffffff08';for(const s of sp){const x0=X(s.c0),x1=X(s.c0+s.e-s.s);if(x1>=0&&x0<=W)c.fillRect(x0,gTop,x1-x0,gb)}
-      for(let x=0;x<cols;x++){const v=ab[x];if(v<0.06)continue;const hh=Math.max(1,Math.min(gb,v/0.6*gb));c.fillStyle=v>=0.3?'#ff5d5d':'#a3a3a3';c.fillRect(x,gTop+gb-hh,1,hh)}}
+      for(let x=0;x<cols;x++){const v=ab[x];if(v<0.06)continue;const hh=Math.max(1,Math.min(gb,v/0.6*gb));c.fillStyle=v>=0.3?'#f0786a':'#8a8f99';c.fillRect(x,gTop+gb-hh,1,hh)}}
     // lane names, on a backing so the data never hides them
     c.font='12px "IBM Plex Sans",system-ui';c.textAlign='left';
     const lab=(t,y)=>{const w=c.measureText(t).width+8;c.fillStyle='#141414e6';c.fillRect(24,y-11,w,15);c.fillStyle='#b4b4b4';c.fillText(t,28,y)};
     if(G)lab(S.set.units==='mph'?'Speed, mph':'Speed, km/h',top+band-4);if(A)lab('G-force',gTop+gb-3)}
   // channel rows
   L.keys.forEach((key,r)=>{const y=rowsY+r*rowH,ch=L.chans.get(key);
-    for(const s of ch.segs){const x0=X(t2c(s.start)),x1=X(t2c(s.end));if(x1<0||x0>W)continue;c.fillStyle=TL.pat[s.cat]||TL.pat.normal;c.fillRect(x0,y,Math.max(1,x1-x0-(x1-x0>4?1:0)),rowH-1.5)}
+    for(const s of ch.segs){const x0=X(t2c(s.start)),x1=X(t2c(s.end));if(x1<0||x0>W)continue;c.fillStyle=TL.pat[s.cat]||TL.pat.normal;const bw=Math.max(1,x1-x0-(x1-x0>6?2:0)),bh=rowH-2;if(c.roundRect&&bw>6){c.beginPath();c.roundRect(x0,y,bw,bh,Math.min(3,bh/2));c.fill()}else c.fillRect(x0,y,bw,bh)}
     });
   // clip range for export
   if(EX.inT!=null||EX.outT!=null){const [a,b]=evdRange(),xa=X(t2c(a)),xb=X(t2c(b));c.fillStyle='#ffb0201a';c.fillRect(xa,top,xb-xa,H-top);c.fillStyle='#ffb020';
     if(EX.inT!=null)c.fillRect(xa-1,top,2,H-top);if(EX.outT!=null)c.fillRect(xb-1,top,2,H-top)}
   // event marks: a filled triangle for an event recording, an outlined one for a firm or hard moment
   for(const ev of evList()){const x=X(t2c(ev.t));if(x<-8||x>W+8)continue;c.beginPath();c.moveTo(x-6,top+1);c.lineTo(x+6,top+1);c.lineTo(x,top+11);c.closePath();
-    c.lineWidth=1.5;if(ev.clip){c.fillStyle='#ff5d5d';c.fill();c.strokeStyle='#141414';c.stroke()}else{c.fillStyle='#141414';c.fill();c.strokeStyle='#ff5d5d';c.stroke()}}
+    c.lineWidth=1.5;if(ev.clip){c.fillStyle='#f0786a';c.fill();c.strokeStyle='#141414';c.stroke()}else{c.fillStyle='#141414';c.fill();c.strokeStyle='#ff5d5d';c.stroke()}}
   {const g=$('#tlLab');g.innerHTML=L.keys.map((k,r)=>`<span style="top:${rowsY+r*rowH-0.5}px;height:${rowH}px" title="${chLabel(k).replace(/"/g,'')}">${k}</span>`).join('')}
 }
 function drawPlayhead(){const h=$('#tlHead');if(!L.spans.length){h.style.display='none';return}let x=c2x(t2c(S.T));
