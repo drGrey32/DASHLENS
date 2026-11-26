@@ -129,14 +129,16 @@ The timeline is the centre of the product.
 
 ## 9. Privacy and trust
 
-- **"Private by design" must stay exactly true.** The map tiles come from an external server. Say so at the map
-  ("Map tiles are loaded from the internet. Your video stays on this computer.") and give a switch to turn the map
-  off. Both open from a globe button with the map controls, so no band covers the map. The globe's tooltip says
-  whether tiles are on, and it is dimmed when they are off. The tile credit stays on the map as one small line,
-  because the tile provider requires it.
-- **One line in the app says that nothing is uploaded and nothing is tracked.** Keep it true for every new feature.
-- **Make the claim checkable** [R]. The "Private" status counts the internet requests from the browser's own log,
-  names their hosts, and tells the user how to check it in the browser's Network tab.
+- **All privacy information is in one place: Settings, Privacy.** No privacy note, badge or status appears on the
+  start screen, the main screen, the map or any dialog. The owner's choice: notes on every screen distract.
+- **"Private by design" must stay exactly true.** The map tiles come from an external server. Settings, Privacy says
+  so, and its "Map tiles" switch turns the map off. The tile credit stays on the map as one small line, because the
+  tile provider requires it; it is a credit, not a privacy note.
+- **One line in Settings, Privacy says that nothing is uploaded and nothing is tracked.** Keep it true for every new
+  feature.
+- **Make the claim checkable** [R]. Settings, Privacy counts the internet requests from the browser's own log, names
+  their hosts, tells the user how to check it in the browser's Network tab, says what is kept in the browser, and
+  has a button to forget it.
 - **No dark patterns** (ETHIC rules): no paid tier, no nags, no rating prompts, least of all after an incident.
 - **Calm words inside the app.** The README's humour fits the project page. In the app, the user may have just had a
   crash (PSY research on stress and trust).
@@ -184,7 +186,7 @@ calm and plain: no jokes, no exclamation marks, no blame (GOV.UK error rules).
 2. Keyboard access, labels, and the 12 px minimum text size.
 3. "Next event" and an events list.
 4. Event types that read without colour.
-5. The map privacy line and a switch to turn the map off.
+5. The privacy information and the switch to turn the map off, in Settings, Privacy.
 6. Clip export and the incident summary.
 7. Built in 1.6.0 [R]: Tesla's embedded telemetry (SEI); frame pins with notes, carried into the summary; a local
    "resume where you left off" (position, pins and clip range, in this browser only); a CSV export of the telemetry,

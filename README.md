@@ -36,7 +36,7 @@ It just sits there, quietly doing its fucking job. A concept apparently lost on 
 - **Pick up where you left off:** Open the same footage again and DashLens offers to go back to where you stopped, with your pins and clip range. This is kept in your browser only.
 - **Telemetry as CSV:** Speed, position, heading and G-force, one row for each reading the camera recorded, ready for a spreadsheet.
 - **Tesla support:** TeslaCam folders (RecentClips, SavedClips, SentryClips) with all cameras, and the speed, position, G-force, brake, turn signals, gear and Autopilot state that Tesla firmware 2025.44.25 or later writes into every frame.
-- **Privacy you can check:** The "Private" status counts every internet request the page makes, and tells you how to check it yourself.
+- **Privacy you can check:** Settings, Privacy counts every internet request the page makes, and tells you how to check it yourself.
 - **Local processing:** Your footage stays on your computer. Your questionable karaoke sessions are nobody else's business.
 
 ## Why pay when you can have it for free?

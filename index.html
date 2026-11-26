@@ -182,15 +182,12 @@ body.single .tb[data-act=focus],body.single .tb[data-act=max],body.single .tb[da
 #banner.show{display:flex}#banner span{flex:1}
 canvas.fill{position:absolute;inset:0;width:100%;height:100%;display:block}
 .mapbtns{position:absolute;right:6px;top:40px;display:flex;flex-direction:column;gap:4px;z-index:3}
-.mapnote{position:absolute;right:38px;top:40px;z-index:4;width:min(250px,calc(100% - 50px));background:var(--panel);border:1px solid var(--line2);border-radius:var(--r3);box-shadow:var(--sh2);padding:10px 12px;font-size:var(--fs-support);color:var(--text2);line-height:1.4}
-.mapnote:not(.show){display:none}.mapnote .mtxt{display:block}.mapnote .btn{margin-top:8px;height:28px}
 .mapattr{position:absolute;right:6px;bottom:3px;left:40%;z-index:3;text-align:right;font-size:var(--fs-caption,12px);color:#ffffffb8;text-shadow:0 0 3px #000,0 0 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:auto}
-.mapattr[hidden]{display:none}.mapbtns .tb.off svg{opacity:.45}
+.mapattr[hidden]{display:none}
 /* ---------- empty state ---------- */
 #empty{position:absolute;inset:0;display:grid;place-items:center;z-index:5}
 #empty .card{width:min(560px,90%);text-align:center;padding:34px 30px;border:1px dashed #3a3a3a;border-radius:var(--r4);background:#0e1116}
 #empty h1{font-size:var(--fs-title);margin:0 0 8px;font-weight:600}
-#empty .private{color:var(--text);margin-top:14px}
 #empty p{color:var(--muted);margin:6px 0}
 #empty .row{display:flex;gap:10px;justify-content:center;margin:18px 0 10px}
 #empty .fine{font-size:12px;color:var(--dim);margin-top:14px;line-height:1.5}
@@ -289,9 +286,6 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 .hide{display:none!important}
 .hg{display:flex;flex-direction:column;line-height:1.15;min-width:12.5em;padding-left:18px;border-left:1px solid var(--line2)}
 .hg small{color:var(--muted);font-size:var(--fs-support)}.hg span{font-weight:600;white-space:nowrap}.hg span i{font-style:normal;font-weight:400;color:var(--text2)}
-.priv{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;background:none;border:1px solid transparent;border-radius:var(--r2);color:var(--text2);cursor:pointer;white-space:nowrap}
-.priv:hover{border-color:var(--line2);color:var(--text)}
-.priv .dot{width:8px;height:8px;border-radius:50%;background:#4fbf7a;flex:none}.priv.net .dot{background:var(--teal)}
 .mh3{font-size:var(--fs-body);margin:16px 0 6px}
 #incCard{position:absolute;left:0;right:0;top:0;z-index:4;background:var(--panel);border:1px solid var(--line);border-radius:var(--r3);padding:12px 14px}
 #incCard .ih{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:var(--fs-support)}#incCard .ih span{flex:1}
@@ -380,7 +374,6 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
       <div class="hg" id="hG" hidden><small>G-force</small><span id="hGv">—</span></div>
     </div>
     <div class="grp right">
-      <button class="priv" id="bPriv" title="What leaves this computer"><i class="dot" aria-hidden="true"></i><span id="privT">Private</span></button>
       <button class="btn" id="bEvd" title="Save a clip, the original files and an incident summary"><span class="lg">Save evidence</span><span class="sm">Evidence</span></button>
       <div id="prog" role="button" tabindex="0" title="Show loading details"><span class="spin" style="width:11px;height:11px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--text);animation:spin .8s linear infinite"></span><span id="progT"></span><div class="bar"><i id="progB"></i></div></div>
       <div class="seg" id="layoutSel" role="radiogroup" aria-label="Layout presets"></div>
@@ -411,7 +404,6 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
       <p>Choose your dashcam's SD card, or a folder you copied from it. All subfolders (Normal, Event, Parking…) are included.</p>
       <div class="row"><button class="btn primary" id="bOpen2"></button><button class="btn" id="bAdd2">Open files…</button></div>
       <p>…or drop the folder anywhere on this window.</p>
-      <p class="private">Nothing is uploaded and nothing is tracked. Your videos stay on this computer.</p>
       <div class="fine">Works with most dashcams (Vantrue, Viofo, BlackVue, Thinkware, Nextbase, 70mai, Garmin, Rexing, Tesla TeslaCam and others), from single-channel up to 4-channel. Clips are put in order by the date and time in their names; front, rear and cabin cameras are matched automatically. GPS and G-sensor data are shown when the camera recorded them.<br>Use Chrome or Edge (needed for H.265 footage).</div>
     </div></div>
   </main>
@@ -465,8 +457,16 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
   <section class="sec">
     <h3>Speed &amp; map</h3>
     <div class="srow"><div class="sl"><b>Speed units</b></div><div class="segsel" data-for="sUnits"><button data-v="kmh">km/h</button><button data-v="mph">mph</button></div></div>
-    <div class="srow"><div class="sl"><b>Map tiles</b><small>The map pictures come from Esri over the internet. Only the map area is requested; your video stays on this computer. Turn this off to load nothing from the internet.</small></div><input type="checkbox" class="sw" id="sMapOn" aria-label="Map tiles"></div>
     <div class="srow"><div class="sl"><b>Map style</b></div><select id="sMap" class="ssel" aria-label="Map style"></select></div>
+  </section>
+
+  <section class="sec" id="secPriv">
+    <h3>Privacy</h3>
+    <p class="sdesc">Your videos never leave this computer. The browser reads them from your disk. Nothing is uploaded, and there is no account, analytics or tracking.</p>
+    <div class="srow"><div class="sl"><b>Map tiles</b><small>The map pictures come from Esri over the internet. Only the map area is requested, never your video. Turn this off to load nothing from the internet.</small></div><input type="checkbox" class="sw" id="sMapOn" aria-label="Map tiles"></div>
+    <div class="srow col"><div class="sl"><b>Internet requests</b><small id="privNow"></small></div></div>
+    <div class="srow col"><div class="sl"><b>Check it yourself</b><small>Press F12 (or ⌥⌘I on a Mac) and open the Network tab. Play and scrub your footage: no request carries your video, and map pictures appear only while the map is on. Or turn off Wi-Fi: everything except the map pictures keeps working.</small></div></div>
+    <div class="srow"><div class="sl"><b>Saved in this browser</b><small id="privStore">Your settings, and for each footage you opened: the last position, your pins and the clip range. Nothing of this leaves this computer.</small></div><button class="btn" id="bForget">Forget</button></div>
   </section>
 
   <section class="sec">
@@ -489,14 +489,14 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
     <div class="srow"><div class="sl"><b>Reset settings</b><small>Restore every setting and layout to its default.</small></div><button class="btn" id="bReset">Reset</button></div>
     <pre id="diag" hidden>No footage loaded.</pre>
   </details>
-  <p class="sver"><span id="appVer"></span><br>Nothing is uploaded and nothing is tracked. The only internet requests are map tiles, when the map is on.</p>
+  <p class="sver"><span id="appVer"></span></p>
 </aside>
 
 <aside class="drawer" id="evPanel" aria-label="Events">
   <div class="shead"><h2>Events</h2><button class="btn ib" id="bEvX" title="Close events"></button></div>
   <p class="sdesc">Event recordings and moments of firm or hard braking, acceleration or turning. Select one to go to 5 seconds before it.</p>
   <ol id="evRows"></ol>
-  <section id="pinSec"><h3>Your pins</h3><p class="sdesc">Mark moments with P or the Pin button. Each pin can have a note. Pins go into the incident summary, and they are kept on this computer for the next time you open this footage.</p><ol id="pinRows"></ol></section>
+  <section id="pinSec"><h3>Your pins</h3><p class="sdesc">Mark moments with P or the Pin button. Each pin can have a note. Pins go into the incident summary, and they are kept for the next time you open this footage.</p><ol id="pinRows"></ol></section>
 </aside>
 <div class="modal" id="evdModal" role="dialog" aria-modal="true" aria-labelledby="evdH"><div class="box">
   <h2 id="evdH">Save evidence</h2>
@@ -530,23 +530,11 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
   </section>
   <div class="mfoot"><button class="btn" id="bEvdX">Close</button></div>
 </div></div>
-<div class="modal" id="privModal" role="dialog" aria-modal="true" aria-labelledby="privH"><div class="box" style="width:min(560px,92vw)">
-  <h2 id="privH">What leaves this computer</h2>
-  <p class="note"><b style="color:var(--text)">Your videos never do.</b> The browser reads them from your disk. Nothing is uploaded, and there is no account, analytics or tracking.</p>
-  <p class="note" id="privNow"></p>
-  <h3 class="mh3">Check it yourself</h3>
-  <ol class="note" style="padding-left:18px;margin:0">
-    <li>Press F12 (or ⌥⌘I on a Mac) and open the Network tab.</li>
-    <li>Play and scrub your footage. No request carries your video; only map pictures appear, and only while the map is on.</li>
-    <li>Or turn off Wi-Fi: everything except the map pictures keeps working.</li>
-  </ol>
-  <div class="mfoot"><button class="btn" id="bPrivMap"></button><button class="btn" id="bPrivX">Close</button></div>
-</div></div>
 <div class="modal" id="savedModal" role="dialog" aria-modal="true" aria-labelledby="savedH"><div class="box" style="width:min(620px,92vw);padding:0">
   <div style="padding:24px 24px 8px"><div style="display:flex;align-items:center;gap:12px"><span class="okdot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><h2 id="savedH" style="margin:0">Your evidence is saved</h2></div>
   <p class="note" id="savedTxt" style="margin:12px 0 0"></p></div>
   <ul id="savedList"></ul>
-  <div class="savedlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>The files on your SD card were not changed, and nothing was uploaded.</span></div>
+  <div class="savedlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>The files on your SD card were not changed.</span></div>
   <div class="mfoot" style="padding:4px 24px 22px"><button class="btn" id="bSavedSum">Open the summary</button><button class="btn primary" id="bSavedX">Done</button></div>
 </div></div>
 <div class="menu" id="tilesMenu"></div>
@@ -638,7 +626,6 @@ const IC={
  triR:'<svg viewBox="0 0 24 24"><path d="M8 5v14l10-7z"/></svg>',
  vol:'<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>',
  mute:'<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm13.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z"/></svg>',
- globe:'<svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.08 16zm2.95-8H5.08a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>',
  gear:'<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.47.47 0 0 0-.47.41l-.36 2.54a7.4 7.4 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>',
  help:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 16h-2v-2h2zm2.1-7.7-.9.9c-.7.7-1.2 1.3-1.2 2.8h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3A2 2 0 1 0 10 8H8a4 4 0 1 1 7.1 2.3z"/></svg>',
  full:'<svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg>',
@@ -1283,13 +1270,9 @@ function rebuildTele(final){
 // what leaves this computer: counted from the browser's own resource log, so the claim can be checked
 const NET={n:0,hosts:new Map()};
 try{new PerformanceObserver(l=>{for(const e of l.getEntries()){if(!/^https?:/.test(e.name))continue;NET.n++;let h='';try{h=new URL(e.name).host}catch(x){}NET.hosts.set(h,(NET.hosts.get(h)||0)+1)}syncPriv()}).observe({type:'resource',buffered:true})}catch(e){}
-function syncPriv(){const b=$('#bPriv');if(!b)return;b.classList.toggle('net',NET.n>0);
-  const d=NET.n?`Private: your video stays here. ${fmtN(NET.n)} map request${NET.n>1?'s':''} so far, nothing else.`:'Private: your video stays here. No internet requests so far.';
-  $('#privT').textContent='Private';b.title=d+' Click for details.';b.setAttribute('aria-label',d+' What leaves this computer');
-  if($('#privModal').classList.contains('show'))privNow()}
+function syncPriv(){if($('#privNow'))privNow()}
 function privNow(){const hs=[...NET.hosts].map(([h,n])=>`${h} (${fmtN(n)})`).join(', ');
-  $('#privNow').innerHTML=NET.n?`Since this page opened: <b style="color:var(--text)">${fmtN(NET.n)} internet request${NET.n>1?'s':''}</b>, all for map pictures, to ${hs}. They contain only the map area, not your video.`:`Since this page opened: <b style="color:var(--text)">no internet requests</b>.`;
-  $('#bPrivMap').textContent=S.set.mapTiles?'Turn map pictures off':'Turn map pictures on'}
+  $('#privNow').innerHTML=NET.n?`Since this page opened: ${fmtN(NET.n)} request${NET.n>1?'s':''}, all for map pictures, to ${hs}. They contain only the map area, not your video.`:`Since this page opened: no internet requests.`}
 // errors and blocked actions: on the screen until the user closes them
 function showMsg(title,text,actions){const b=$('#msgBox');$('.mi',b).innerHTML=IC_WARN;$('#msgT').textContent=title;$('#msgP').textContent=text||'';
   const a=$('#msgA');a.innerHTML='';for(const [lab,fn,primary] of actions||[]){const x=el('button','btn'+(primary?' primary':''),lab);x.onclick=()=>{hideMsg();fn()};a.appendChild(x)}
@@ -2124,14 +2107,10 @@ class MiniMap{
   constructor(tile){
     this.tile=tile;const tin=$('.tin',tile);tin.style.background='#141414';
     this.cv=el('canvas','fill');tin.appendChild(this.cv);this.ctx=this.cv.getContext('2d');
-    const b=el('div','mapbtns');b.innerHTML=`<button class="tb" data-z="1" title="Zoom in">${IC.plus}</button><button class="tb" data-z="-1" title="Zoom out">${IC.minus}</button><button class="tb" data-act="net" aria-expanded="false">${IC.globe}</button>`;tin.appendChild(b);
+    const b=el('div','mapbtns');b.innerHTML=`<button class="tb" data-z="1" title="Zoom in">${IC.plus}</button><button class="tb" data-z="-1" title="Zoom out">${IC.minus}</button>`;tin.appendChild(b);
     b.addEventListener('click',e=>{const t=e.target.closest('[data-z]');if(t){this.zoomBy(+t.dataset.z);e.stopPropagation()}});
-    // the privacy line and the map switch open from a button, so nothing covers the map; the tile credit stays as one small line
-    this.bar=el('div','mapnote');this.bar.setAttribute('role','dialog');this.bar.setAttribute('aria-label','Map tiles');this.bar.innerHTML='<span class="mtxt"></span><button class="btn tx" data-act="tiles"></button>';tin.appendChild(this.bar);
-    this.attrEl=el('div','mapattr');tin.appendChild(this.attrEl);this.netBtn=$('[data-act=net]',b);
-    this.netBtn.onclick=e=>{e.stopPropagation();const o=!this.bar.classList.contains('show');this.bar.classList.toggle('show',o);this.netBtn.setAttribute('aria-expanded',o);if(o)$('[data-act=tiles]',this.bar).focus()};
-    this.bar.addEventListener('pointerdown',e=>e.stopPropagation());document.addEventListener('pointerdown',()=>{if(this.bar.classList.contains('show')){this.bar.classList.remove('show');this.netBtn.setAttribute('aria-expanded','false')}});
-$('[data-act=tiles]',this.bar).onclick=e=>{e.stopPropagation();setMapTiles(!S.set.mapTiles)};
+    // the tile credit that the tile provider requires; privacy information is only in Settings, Privacy
+    this.attrEl=el('div','mapattr');tin.appendChild(this.attrEl);
     this.z=S.set.mapZ||16;this.follow=true;this.cx=0.5;this.cy=0.5;this.tiles=new Map();this.dirty=true;this.last=null;this.errs=0;this.oks=0;
     this.setSource(S.set.mapSrc);
     new ResizeObserver(()=>this.resize()).observe(tin);
@@ -2141,9 +2120,7 @@ $('[data-act=tiles]',this.bar).onclick=e=>{e.stopPropagation();setMapTiles(!S.se
     this.syncBtn();
   }
   setSource(id){if(!MAPSRC[id]||id==='none'){id='esri-hyb';S.set.mapSrc=id}if(!S.set.mapTiles)id='none';this.src=MAPSRC[id];this.tiles.clear();this.errs=0;this.oks=0;this.attrEl.textContent=this.src.attr;this.attrEl.title=this.src.attr;this.attrEl.hidden=!this.src.attr;
-    const on=!!S.set.mapTiles;$('.mtxt',this.bar).textContent=on?'Map tiles load from the internet. Your video stays on this computer.':'Map tiles are off. Nothing is loaded from the internet.';
-    $('[data-act=tiles]',this.bar).textContent=on?'Turn map off':'Turn map on';
-    const nt=on?'Map tiles load from the internet. Select to turn them off.':'Map tiles are off. Select to turn them on.';this.netBtn.title=nt;this.netBtn.setAttribute('aria-label',nt);this.netBtn.classList.toggle('off',!on);this.dirty=true}
+    this.dirty=true}
   resize(){const r=this.cv.getBoundingClientRect();this.dpr=Math.min(2,window.devicePixelRatio||1);this.w=r.width;this.h=r.height;this.cv.width=Math.max(1,Math.round(r.width*this.dpr));this.cv.height=Math.max(1,Math.round(r.height*this.dpr));this.dirty=true}
   syncBtn(){const b=$('.tb[data-act=follow]',this.tile);if(b)b.classList.toggle('on',this.follow)}
   zoomBy(d,e){const nz=clamp(this.z+d,2,this.src.max);if(nz===this.z)return;
@@ -2596,7 +2573,7 @@ function onKey(e){
   else if(k==='p'||k==='P')addPin();
   else if(k==='s'||k==='S')snapshot(S.maxTile&&P.has(S.maxTile)?S.maxTile:S.leadKey);
   else if(k==='?')$('#helpModal').classList.toggle('show');
-  else if(k==='Escape'){for(const m of document.querySelectorAll('.mapnote.show'))m.classList.remove('show');for(const id of ['#savedModal','#privModal','#helpModal','#repModal','#detModal','#setPanel','#evPanel','#tilesMenu','#dataNote',...(EX.run?[]:['#evdModal'])])$(id).classList.remove('show');hideMsg();if(S.maxTile){S.maxTile=null;applyLayout()}}
+  else if(k==='Escape'){for(const id of ['#savedModal','#helpModal','#repModal','#detModal','#setPanel','#evPanel','#tilesMenu','#dataNote',...(EX.run?[]:['#evdModal'])])$(id).classList.remove('show');hideMsg();if(S.maxTile){S.maxTile=null;applyLayout()}}
   else if(/^[0-9]$/.test(k)){if(k==='0')setMode('grid');else{const id=visVids()[+k-1];if(id)toggleFocus(id)}}
   else h=false;
   if(h)e.preventDefault();
@@ -2608,8 +2585,7 @@ function onKey(e){
 MONO=getComputedStyle(document.body).getPropertyValue('--mono')||'monospace';
 tlInit();bindControls();bindSettings();bindFiles();ensureTiles();applyLayout();buildChRows();adaptUI();syncEvNav();
 $('#bLoadCancel').onclick=cancelLoad;syncPriv();
-$('#bPriv').onclick=()=>{privNow();$('#privModal').classList.add('show');$('#bPrivX').focus()};$('#bPrivX').onclick=()=>$('#privModal').classList.remove('show');
-$('#privModal').onclick=e=>{if(e.target.id==='privModal')e.target.classList.remove('show')};$('#bPrivMap').onclick=()=>{setMapTiles(!S.set.mapTiles);privNow()};
+$('#bForget').onclick=()=>{store.set('resume',{});PINS.list=[];PINS.fp=L.segs.length?libFp():null;renderPins();TL.dirty=true;toast('Saved positions and pins forgotten')};
 $('#bRangeX').onclick=()=>{EX.inT=EX.outT=null;syncEvd()};
 $('#bMsgX').innerHTML=IC.x;$('#bMsgX').onclick=hideMsg;$('#bSumX').innerHTML=IC.x;$('#bSumX').onclick=()=>{$('#sumCard').hidden=true};
 $('#bSumDet').onclick=()=>showDetails();$('#bDetX').onclick=()=>$('#detModal').classList.remove('show');$('#detModal').onclick=e=>{if(e.target.id==='detModal')e.target.classList.remove('show')};
