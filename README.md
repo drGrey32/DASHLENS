@@ -32,6 +32,10 @@ It just sits there, quietly doing its fucking job. A concept apparently lost on 
 - **Jump to the events:** "Next event", "Previous event" and a list with the time, peak g and speed, so you don't scrub through 40 minutes of motorway to find the one second that matters.
 - **Save evidence:** One click saves an evidence folder: the moment from every camera as one video file (with the time, speed and G-force on it), a printable incident summary, exact copies of the original files, the GPS route, and SHA-256 checksums of everything. Your original files stay untouched.
 - **Straight to the point:** After loading, DashLens shows the strongest moment in the footage and says why it picked it. Hover over the timeline to see the frame under the pointer.
+- **Pins:** Press P to pin a moment and write a note on it. Pins, with a picture of the frame, go into the incident summary.
+- **Pick up where you left off:** Open the same footage again and DashLens offers to go back to where you stopped, with your pins and clip range. This is kept in your browser only.
+- **Telemetry as CSV:** Speed, position, heading and G-force, one row for each reading the camera recorded, ready for a spreadsheet.
+- **Tesla support:** TeslaCam folders (RecentClips, SavedClips, SentryClips) with all cameras, and the speed, position, G-force, brake, turn signals, gear and Autopilot state that Tesla firmware 2025.44.25 or later writes into every frame.
 - **Privacy you can check:** The "Private" status counts every internet request the page makes, and tells you how to check it yourself.
 - **Local processing:** Your footage stays on your computer. Your questionable karaoke sessions are nobody else's business.
 
@@ -69,7 +73,7 @@ That's it. No installer, terminal commands, dependencies to install, or bullshit
 
 DASHLENS is designed to work with common dashcam recording conventions, from single-camera setups to four-channel systems. Compatibility depends on the recording format, filename conventions and browser decoding support.
 
-- GPS and G-sensor displays require compatible recorded telemetry.
+- GPS and G-sensor displays require compatible recorded telemetry. Tesla telemetry needs firmware 2025.44.25 or later and HW3 or later; parked (Sentry) clips may have none.
 - H.265/HEVC playback requires compatible browser and system decoding support.
 - Online map tiles require an internet connection and are fetched from external map providers; your video files are processed locally in your browser and are not uploaded by DASHLENS. One switch turns the map tiles off, and then nothing at all is loaded from the internet.
 - Local video playback does not require an internet connection.

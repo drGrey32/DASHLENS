@@ -60,8 +60,14 @@ The timeline is the centre of the product.
 - **Units.** One visible setting (km/h or mph), from the locale by default.
 - **Draw only what was recorded** [R]. Break the route and the speed line where GPS was lost. Never smooth over a gap:
   smoothed evidence looks more certain than it is.
-- **One colour, one meaning** [R]. Teal is GPS (speed, route, heading). Red is an event or a hard moment. Left and
-  right turns use blue and violet. Driving clips are a quiet grey, so that colour shows only meaning.
+- **One colour, one meaning** [R]. Teal is GPS (speed, route, heading). Coral and red are an event or a hard moment.
+  Driving clips are a soft sky blue (`#79a8f2`): lively, but lighter and less saturated than any colour that carries a
+  warning. Parking is sand. Left and right turns on the G-sensor are orchid pink (`#e89ad8`) and violet (`#a18bff`), so
+  no turn colour is the driving blue. The user's own pins are light grey with a round head, to differ by shape from
+  event triangles.
+- **Car data when the car records it.** Tesla writes speed, position, G-force, brake, turn signals, gear and Autopilot
+  state into every frame (firmware 2025.44.25 or later, HW3 or later). Read it from the file as the car wrote it, and
+  say where it came from.
 - **Missing telemetry** [INT-23]. When a camera recorded no GPS or G-sensor data, the panel says so in one quiet
   line. It does not show an empty chart.
 
@@ -92,8 +98,8 @@ The timeline is the centre of the product.
 - **Every control works with the keyboard**, in a logical focus order, with a visible focus ring [WCAG 2.1.1, 2.4.7].
 - **Player shortcuts:** Space (play/pause), ← and → (one frame), Shift + ← → (5 s), J K L (speed), I and O (clip
   start and end; Shift + I / O goes there), = and − (timeline zoom; Shift + Z shows all), E (next event), number keys
-  (cameras), and "?" for a list of all shortcuts. Every shortcut action is also a visible control [INT-1], and its key
-  is in the control's tooltip [R].
+  (cameras), P (pin this moment), and "?" for a list of all shortcuts. Every shortcut action is also a visible
+  control [INT-1], and its key is in the control's tooltip [R].
 - **Icon buttons have names** [INT-25]: an `aria-label` on each, and a visible label where there is space.
 - **Text size** [TEXT-2]: at least 12 px for all text that the user must read (file names, chart labels, legends).
   The layout still works at 200 % browser zoom.
@@ -178,5 +184,6 @@ calm and plain: no jokes, no exclamation marks, no blame (GOV.UK error rules).
 4. Event types that read without colour.
 5. The map privacy line and a switch to turn the map off.
 6. Clip export and the incident summary.
-7. Not built yet [R]: reading Tesla's embedded telemetry (SEI); frame pins carried into the summary; a local
-   "resume where you left off"; a CSV export of the telemetry.
+7. Built in 1.6.0 [R]: Tesla's embedded telemetry (SEI); frame pins with notes, carried into the summary; a local
+   "resume where you left off" (position, pins and clip range, in this browser only); a CSV export of the telemetry,
+   one row for each recorded reading, with nothing filled in or smoothed.
