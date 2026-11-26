@@ -68,6 +68,9 @@ The timeline is the centre of the product.
 - **Car data when the car records it.** Tesla writes speed, position, G-force, brake, turn signals, gear and Autopilot
   state into every frame (firmware 2025.44.25 or later, HW3 or later). Read it from the file as the car wrote it, and
   say where it came from.
+- **Each G-force lane has its own scale, and says it** ("Sideways, up to 0.10 g"). A shared scale hides a small
+  sideways force next to hard braking. The smallest scale is ±0.1 g, so sensor noise stays small. A lane with no
+  reading says "nothing recorded".
 - **Missing telemetry** [INT-23]. When a camera recorded no GPS or G-sensor data, the panel says so in one quiet
   line. It does not show an empty chart.
 

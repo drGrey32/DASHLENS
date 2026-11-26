@@ -2251,14 +2251,19 @@ class AccPanel{
   }
   lanes(c,x,y,w,h,A,T){
     const half=this.win/2,t0=T-half,t1=T+half,i0=Math.max(0,bsearch(A.t,t0,A.n)),i1=Math.min(A.n-1,bsearch(A.t,t1,A.n)+1);
-    let mx=0.1;for(let i=i0;i<=i1;i++)mx=Math.max(mx,Math.abs(A.lon[i]),Math.abs(A.lat[i]));mx=Math.min(1.5,mx*1.15);
+    // each lane has its own scale (at least ±0.1 g, so sensor noise stays small), and says its scale, so a small
+    // sideways force is still visible next to a hard stop, and the two lanes are never compared by height alone
+    const scl=arr=>{let m=0;for(let i=i0;i<=i1;i++)m=Math.max(m,Math.abs(arr[i]));return {mx:Math.min(1.5,Math.max(0.1,m*1.15)),peak:m}};
     const gap=8,foot=14,lh=(h-foot-gap)/2,X=t=>x+(t-t0)/this.win*w;
-    const lane=(ly,arr,posCol,negCol,title,posLab,negLab)=>{
+    const lane=(ly,arr,posCol,negCol,title,posLab,negLab)=>{const {mx,peak}=scl(arr);
       c.fillStyle='#ffffff07';c.fillRect(x,ly,w,lh);const base=ly+lh;
+      c.fillStyle='#ffffff26';c.fillRect(x,base-1,w,1);
+
       for(const sign of [1,-1]){const pts=[];for(let i=i0;i<=i1;i++){const v=Math.max(0,sign*arr[i]);pts.push([X(A.t[i]),base-Math.min(1,v/mx)*(lh-14),A.t[i]])}
         c.beginPath();smoothArea(c,pts,base);c.fillStyle=(sign>0?posCol:negCol)+'b0';c.fill()}
       c.font='600 12px "IBM Plex Sans",system-ui';const lw=c.measureText(posLab).width+c.measureText(negLab).width+40;
-      if(c.measureText(title).width+lw+12<w){c.textAlign='left';c.fillStyle='#b4b4b4';c.fillText(title,x+4,ly+12)}
+      const sc=peak<0.01?'nothing recorded':`up to ${mx.toFixed(2)} g`;let tl=`${title}, ${sc}`;if(c.measureText(tl).width+lw+12>=w)tl=sc[0].toUpperCase()+sc.slice(1);
+      if(c.measureText(tl).width+lw+12<w){c.textAlign='left';c.fillStyle='#b4b4b4';c.fillText(tl,x+4,ly+12)}
       c.textAlign='right';let lx=x+w-4;for(const [lab,col] of [[posLab,posCol],[negLab,negCol]]){c.fillStyle=col;c.fillText(lab,lx,ly+12);lx-=c.measureText(lab).width+4;c.fillRect(lx-8,ly+3,8,8);lx-=16}};
     lane(y,A.lon,GCOL.acc,GCOL.brk,'Forward','Speeding up','Braking');
     lane(y+lh+gap,A.lat,GCOL.rt,GCOL.lt,'Sideways','Right','Left');
