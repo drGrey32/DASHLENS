@@ -709,7 +709,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${c.labe
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.6.5';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.6.6';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -1595,7 +1595,7 @@ function leadTime(){
   return null;
 }
 function allReady(){for(const p of P.values())if(!p.ready(S.T))return false;return true}
-function play(){if(!L.spans.length)return;if(S.T>=L.tMax-200)S.T=L.tMax-200<L.tMin?L.tMin:spanStartOf(S.T);S.playing=true;S.stalled=true;S.stallSince=performance.now();
+function play(){if(!L.spans.length)return;if(S.T>=L.tMax-200)S.T=L.tMax-200<L.tMin?L.tMin:spanStartOf(S.T);S.playing=true;S.stalled=true;S.stallSince=performance.now();S.advAt=performance.now();
   const p=P.get(S.leadKey);if(p&&p.shown&&!S.set.muted){p.shown.muted=false;p.shown.play().then(()=>{if(S.stalled)p.shown.pause()}).catch(()=>{})}updatePlayBtn()}
 function pause(){S.playing=false;S.stalled=false;for(const p of P.values())p.idle();updatePlayBtn()}
 function togglePlay(){S.playing?pause():play()}
@@ -1620,7 +1620,9 @@ function tick(now){
     const turbo=S.set.rate>=8;
     let mode=S.scrubbing?'scrub':!S.playing?'paused':turbo?'turbo':S.stalled?'hold':'play';
     if(S.scrubbing&&!S.scrubExact&&now-S.lastMoveAt>140)S.scrubExact=true;
-    if(mode==='play'){const lt=leadTime();if(lt!=null){if(lt>S.T)S.T=lt}else S.T+=dt*S.set.rate;gapCheck()}
+    if(mode==='play'){const lt=leadTime(),t0=S.T;if(lt!=null){if(lt>S.T)S.T=lt}else S.T+=dt*S.set.rate;gapCheck();
+      // the last video can end a little before the end of its span; then time stops, so stop playback and show Play
+      if(S.T!==t0)S.advAt=now;else if(S.playing&&now-(S.advAt||now)>800&&S.T>=L.spans[L.spans.length-1].e-3000){pause();toast('End of the footage')}}
     else if(mode==='turbo'){S.stalled=false;S.T+=dt*S.set.rate;gapCheck()}
     else if(mode==='hold'){if(allReady()||now-S.stallSince>2500){S.stalled=false;mode='play'}}
     for(const p of P.values())p.update(S.T,S.playing&&mode!=='scrub'?mode:(S.scrubbing?'scrub':'paused'),now);
@@ -1693,7 +1695,10 @@ function evDetail(x){const p=[];if(x.clip&&x.g)p.push(`${x.g.kind} ${x.g.g.toFix
 function evJump(dir){const ev=evList();if(!ev.length)return;let x=null;
   if(dir>0)x=ev.find(e=>e.jump>S.T+300);else{for(let i=ev.length-1;i>=0;i--)if(ev[i].jump<S.T-1500){x=ev[i];break}}
   if(x){seekTo(x.jump);if(!TL.user||c2x(t2c(x.jump))<0||c2x(t2c(x.jump))>TL.w){const len=TL.view.c1-TL.view.c0;TL.view.c0=t2c(x.jump)-len*0.15;TL.view.c1=TL.view.c0+len;clampView();TL.dirty=true}}
-  else showMsg(dir>0?'No more events after this point':'No events before this point',dir>0?'This is after the last event. Use “Previous event” or the events list.':'This is before the first event. Use “Next event” or the events list.')}
+  else toast(dir>0?'There are no more events after this point':'There are no events before this point')}
+// Previous/Next event are off when there is no event in that direction
+function syncEvPos(){if(!L.segs.length)return;const ev=evList();const nx=ev.some(e=>e.jump>S.T+300),pv=ev.some(e=>e.jump<S.T-1500);
+  const a=$('#bPrevE'),b=$('#bNextE');if(a.disabled!==!pv)a.disabled=!pv;if(b.disabled!==!nx)b.disabled=!nx}
 function renderEvents(){const ev=evList(),ol=$('#evRows');
   if(!ev.length){ol.innerHTML=`<li class="none">${L.segs.length?(L.teleDone?'No event recordings and no firm or hard moments in this footage.':'Looking for events…'):'Open footage to see its events.'}</li>`;return}
   const cur=ev.findIndex(x=>S.T>=x.jump&&S.T<=Math.max(x.e,x.t)+5000);
@@ -1713,7 +1718,7 @@ function restoreLib(){const fp=libFp();if(PINS.fp===fp)return null;PINS.fp=fp;PI
   TL.dirty=true;return Number.isFinite(r.T)&&inSpan(r.T)>=0&&Math.abs(r.T-S.T)>3000?r.T:null}
 function addPin(){if(!L.segs.length)return;const t=S.T;if(PINS.list.some(p=>Math.abs(p.t-t)<200)){toast(`There is already a pin at ${fTime(t)}`);return}
   // the picture is taken now, losslessly, so the summary can show the pinned frame; it is not stored between visits
-  const k=S.maxTile&&P.has(S.maxTile)?S.maxTile:S.leadKey,p=P.get(k),v=p&&p.shown;let img=null;
+  const k=mainCam(),p=P.get(k),v=p&&p.shown;let img=null;
   try{if(v&&v.readyState>=2&&v.videoWidth){const c=document.createElement('canvas'),sc=Math.min(1,960/v.videoWidth);c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);const g=c.getContext('2d'),cf=chCfg(k);
     g.translate(c.width/2,c.height/2);if(cf.flip)g.scale(1,-1);if(cf.mirror)g.scale(-1,1);g.drawImage(v,-c.width/2,-c.height/2,c.width,c.height);img={src:c.toDataURL('image/png'),cam:chLabel(k)}}}catch(e){}
   PINS.list.push({t,note:'',img});PINS.list.sort((a,b)=>a.t-b.t);saveResume();TL.dirty=true;renderPins();toast(`Pinned ${fTime(t)}. Add a note in the events list.`,2400)}
@@ -1799,7 +1804,7 @@ function gpxFor(a,b){const G=L.G;if(!G)return null;const si=spanIdx(a),sp=L.span
 function originalsFor(a,b,ks){const out=[];for(const k of ks){const c=L.chans.get(k);if(!c)continue;for(const s of c.segs)if(s.start<b&&s.end>a)out.push(s)}return out}
 function syncEvdExtras(){const [a,b]=evdRange(),ks=visVids().filter(k=>P.has(k)),o=originalsFor(a,b,ks),sz=o.reduce((x,s)=>x+s.file.size,0);
   $('#evdOrigT').textContent=o.length?`Exact copies of the ${plural(o.length,'original file')} (${fSize(sz)})`:'Exact copies of the original files';
-  $('#evdGpx').disabled=!L.G;if(!L.G)$('#evdGpx').checked=false;
+  {const x=$('#evdGpx');x.disabled=!L.G;if(!L.G){if(x.checked){x.checked=false;x.dataset.auto='1'}}else if(x.dataset.auto){x.checked=true;delete x.dataset.auto}}
   $('#evdDest').textContent=window.showDirectoryPicker&&!IN_FRAME?'You choose a folder. DashLens makes a new folder in it for these files.':'The files go to your Downloads folder. The browser may ask you to allow several downloads.'}
 // the whole package: clip, summary, originals, GPX, checksums; then the "saved" screen
 async function saveEvidence(){
@@ -1810,7 +1815,8 @@ async function saveEvidence(){
   if(window.showDirectoryPicker&&!IN_FRAME){try{root=await window.showDirectoryPicker({mode:'readwrite',id:'dashlens-evidence'});dir=await root.getDirectoryHandle(name,{create:true})}
     catch(e){if(e&&e.name==='AbortError')return;showMsg('Could not open that folder',`${String(e&&e.message||e).replace(/\.+$/,'')}. Choose another folder, for example Documents or Downloads.`);return}}
   const put=async(path,blob)=>{if(dir){let d=dir;const parts=path.split('/');for(const q of parts.slice(0,-1))d=await d.getDirectoryHandle(q,{create:true});const fh=await d.getFileHandle(parts[parts.length-1],{create:true}),w=await fh.createWritable();await w.write(blob);await w.close()}
-    else{download(blob,path.replace(/\//g,'_'));await sleep(400)}};
+    else{download(blob,fname(path));await sleep(400)}};
+  const fname=p=>dir?p:`${name}_${p.replace(/\//g,'_')}`;   // in Downloads the files are flat, so each name carries the package name
   const steps=['Recording the clip',...(want.orig?['Copying the original files']:[]),...(want.hash?['Calculating checksums']:[]),...(want.sum?['Making the summary page']:[]),'Writing the files'];
   let si=0;const step=(f,t)=>{$('#evdProg i').style.transform=`scaleX(${clamp(f,0,1).toFixed(3)})`;$('#evdProgT').textContent=`Step ${si+1} of ${steps.length}: ${steps[si]}${t?', '+t:''}`};
   const next=()=>{si++;step(0)};
@@ -1824,13 +1830,13 @@ async function saveEvidence(){
     const gpx=want.gpx?gpxFor(a,b):null;if(gpx){const g=new Blob([gpx],{type:'application/gpx+xml'});await put('route.gpx',g);files.push({name:'route.gpx',blob:g,d:'The GPS route of this drive, for map apps.'})}
     const csv=want.csv?teleCsv(a,b):null;let csvF=null;if(csv){const c=new Blob([csv],{type:'text/csv'});await put('telemetry.csv',c);csvF={name:'telemetry.csv',blob:c,d:'Speed, position and G-force for each reading, as the camera recorded them. Opens in a spreadsheet.'};files.push(csvF)}
     const sums=[];if(want.hash){next();const all=[{name:clipName,blob:clip.blob},...origs,...(gpx?[files.find(f=>f.name==='route.gpx')]:[]),...(csvF?[csvF]:[])];
-      for(let i=0;i<all.length;i++){if(EX.cancel)throw 'cancel';step(i/all.length,`${i+1} of ${all.length}`);sums.push([await sha256(all[i].blob),all[i].name])}}
+      for(let i=0;i<all.length;i++){if(EX.cancel)throw 'cancel';step(i/all.length,`${i+1} of ${all.length}`);sums.push([await sha256(all[i].blob),fname(all[i].name)])}}
     let sumBlob=null;if(want.sum){next();const ev=evList().filter(x=>x.t>=a&&x.t<=b).sort((x,y)=>(y.g?y.g.g:0)-(x.g?x.g.g:0))[0];const T=ev?(ev.g?ev.g.at:ev.t):Math.round((a+b)/2);
       pause();seekTo(T);for(let i=0;i<60&&!allReady();i++)await sleep(50);await sleep(150);
       const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const extra=`<h2>Files in this evidence folder</h2><p>Clip: ${fTime(a)} to ${fTime(b)} (${fDur(b-a)}). Check a file with <code>sha256sum</code> (Linux), <code>shasum -a 256</code> (Mac) or <code>certutil -hashfile FILE SHA256</code> (Windows).</p><table>${(sums.length?sums:[[null,clipName],...origs.map(o=>[null,o.name])]).map(([h,n])=>`<tr><th style="width:auto;font-family:monospace;font-weight:400">${esc(n)}</th><td style="font-family:monospace;font-size:12px;word-break:break-all">${h||''}</td></tr>`).join('')}</table>${origs.length?`<p><small>Copied from: ${origs.map(o=>esc(o.src)).join(', ')}</small></p>`:''}`;
       sumBlob=new Blob([summaryHtml(T,extra)],{type:'text/html'});await put('incident_summary.html',sumBlob);files.splice(1,0,{name:'incident_summary.html',blob:sumBlob,d:'Date, place, speed, peak G-force, a picture from each camera, and the file names. Open it and print it, or save it as a PDF. Send this one too.'});
-      if(want.hash)sums.push([await sha256(sumBlob),'incident_summary.html'])}
+      if(want.hash)sums.push([await sha256(sumBlob),fname('incident_summary.html')])}
     next();if(sums.length){const t=new Blob([sums.map(([h,n])=>`${h}  ${n}`).join('\n')+'\n'],{type:'text/plain'});await put('checksums.sha256.txt',t);files.push({name:'checksums.sha256.txt',blob:t,d:'A SHA-256 fingerprint of every file, to show later that nothing was changed.'})}
     step(1);showSaved(files,dir?`They are in the new folder ${name}.`:'They are in your Downloads folder.',a,b,sumBlob)}
   catch(e){if(e!=='cancel'){console.warn(e);showMsg('The evidence could not be saved',`${String(e&&e.message||e).replace(/\.+$/,'')}. Nothing on your SD card was changed. Try again, or choose another folder.`)}
@@ -1897,7 +1903,7 @@ function accAt(T){const A=L.A;if(!A)return null;const i=bsearch(A.t,T,A.n);if(i<
   const f=gap>0&&gap<3000?(T-A.t[i])/gap:0;const l=(a)=>a[i]+(a[j]-a[i])*f;return {lon:l(A.lon),lat:l(A.lat),ev:l(A.ev),vert:A.vert?l(A.vert):0}}
 let hudCache={};
 function setTxt(id,v){if(hudCache[id]!==v){hudCache[id]=v;const e=document.getElementById(id);if(e)e.innerHTML=v}}
-function updateHUD(){
+function updateHUD(){syncEvPos();
   const T=S.T;setTxt('hDate',fDate(T));setTxt('hTime',fTime(T));$('#tl').setAttribute('aria-valuetext',fDate(T)+' '+fTime(T));
   const g=gpsAt(T);const mph=S.set.units==='mph';setTxt('hSpdU',g?(mph?'mph':'km/h')+' (GPS)':!L.teleDone?(mph?'mph':'km/h')+' (GPS)':L.G?'No GPS in this clip':'No GPS in these files');
   const ar=$('#hArrow');
@@ -1940,6 +1946,8 @@ function allTileIds(){return [...L.keys,...PANELS]}
 function vidOrder(){const lay=S.set.lay;let o=lay.order.filter(k=>L.keys.includes(k));for(const k of L.keys)if(!o.includes(k))o.push(k);lay.order=o;return o}
 function visVids(){const h=new Set(S.set.lay.hidden);return vidOrder().filter(k=>!h.has(k))}
 function curFocus(ids){const f=S.set.lay.focus;return ids.includes(f)?f:ids[0]}
+// the camera that the user looks at: the camera that fills the area, else the main camera, else the first camera
+function mainCam(){if(S.maxTile&&P.has(S.maxTile))return S.maxTile;const ids=visVids().filter(k=>P.has(k));return ids.length?curFocus(ids):S.leadKey}
 function bestCols(n,ar){let best=1,ba=0;for(let c=1;c<=n;c++){const r=Math.ceil(n/c),cw=ar/c,ch=1/r,a=Math.min(cw,ch*16/9)*Math.min(ch,cw*9/16);if(a>ba*1.0001){ba=a;best=c}}return best}
 function layoutVideos(ids,W,H){
   const lay=S.set.lay,r={},sp=[],n=ids.length;if(!n)return {r,sp};
@@ -2374,7 +2382,7 @@ function scrubTo(e){const r=$('#tl').getBoundingClientRect();scrubX=clamp(e.clie
 function hover(e){const r=$('#tl').getBoundingClientRect();const x=e.clientX-r.left;if(!L.spans.length)return;const t=c2t(x2c(x),false);TL.hoverT=inSpan(t)>=0?t:null;laneVals();
   const hv=$('#tlHover'),tip=$('#tlTip');hv.style.display='block';hv.style.left=x+'px';
   const si=inSpan(t);let s;if(si<0){const i=spanIdx(t);const a=L.spans[i],b=L.spans[i+1];s=a&&b?`<b>No recording</b>, ${fTime(a.e,false)} to ${fTime(b.s,false)} (${fGap(b.s-a.e)})`:'' }
-  else{s=`${fDay(t)} <b>${fTime(t)}</b>`;const g=gpsAt(t);if(g)s+=`, ${fSpd(g.spd)} (GPS)`;
+  else{s=`${fDay(t)} <b>${fTime(t)}</b>`;const g=interpG(L.G,t);if(g)s+=`, ${fSpd(g.spd)} (GPS)`;
     const y=e.clientY-r.top;const ri=TL.rows&&Math.floor((y-TL.rows.y)/TL.rows.h);
     const own=ri>=0&&TL.rows&&ri<L.keys.length?[L.keys[ri]]:L.keys;const seen=new Set();
     for(const k of own){const p=P.get(k);const sg=p&&p.find(t);if(sg&&!seen.has(sg.cat)){seen.add(sg.cat);s+=`<br><i class="sw sw-${sg.cat==='normal'?'drive':sg.cat==='event'?'event':'park'}"></i>${CAT_NAME[sg.cat]||sg.cat}${own.length===1?`, ${chLabel(k)}: ${sg.name}`:''}`}}
@@ -2461,7 +2469,7 @@ function zoomPreset(z){TL.user=true;if(z==='drive'){const i=Math.max(0,spanIdx(S
   else{const ms=+z,cc=t2c(S.T);TL.view={c0:cc-ms/2,c1:cc+ms/2}}clampView();TL.dirty=true;for(const b of document.querySelectorAll('.zpre .btn'))b.classList.toggle('on',b.dataset.z===z)}
 /* values beside the speed and G-force lanes, at the pointer or the playhead (Strava) */
 function laneVals(){const sv=$('#lvS'),gv=$('#lvG');if(!sv||!TL.lab){return}const t=TL.hoverT!=null?TL.hoverT:S.T;
-  if(TL.lab.s){const g=gpsAt(t);sv.textContent=g?fSpd(g.spd):'No GPS here';sv.style.left=TL.lab.s.x+'px';sv.style.top=TL.lab.s.y+'px';sv.hidden=false}else sv.hidden=true;
+  if(TL.lab.s){const g=TL.hoverT!=null?interpG(L.G,t):gpsAt(t);sv.textContent=g?fSpd(g.spd):'No GPS here';sv.style.left=TL.lab.s.x+'px';sv.style.top=TL.lab.s.y+'px';sv.hidden=false}else sv.hidden=true;
   if(TL.lab.g){const a=accAt(t);gv.textContent=a?`${a.ev.toFixed(2)} g`:'No reading';gv.style.left=TL.lab.g.x+'px';gv.style.top=TL.lab.g.y+'px';gv.hidden=false}else gv.hidden=true}
 /* what happened inside a time range: top speed, peak G-force and the speed change (shown in the clip-range chip and the summary) */
 function rangeStats(a,b){const o={};const G=L.G,A=L.A;
@@ -2596,7 +2604,22 @@ function syncDrawer(){const open=$('#setPanel').classList.contains('show')||$('#
 const SETROW=[['#sComp','compress'],['#sRetime','gpsRetime'],['#sMapOn','mapTiles'],['#sMap','mapSrc'],['[data-for=sUnits]','units'],['[data-for=sGsm]','gSmooth'],['#sSpdU','spdUnit'],['#sGf','gFwd'],['#sGr','gRight'],['#sGsA','gScale'],['#sCatN','cats']];
 function markChanged(){for(const [sel,k] of SETROW){const e=$(sel);if(!e)continue;const row=e.closest('.srow');if(!row)continue;const ch=JSON.stringify(S.set[k])!==JSON.stringify(DEF[k]);row.classList.toggle('changed',ch);
     let b=row.querySelector('.rst');if(ch&&!b){b=el('button','btn rst','Reset');b.type='button';b.dataset.k=k;b.setAttribute('aria-label','Reset to default');(row.querySelector('.sl b')||row).after?(row.querySelector('.sl b')||row).after(b):row.appendChild(b)}if(b)b.hidden=!ch}}
-function bindDrawers(){for(const id of ['#setPanel','#evPanel'])new MutationObserver(syncDrawer).observe($(id),{attributes:true,attributeFilter:['class']});
+// Panels: when one opens, remember the control that opened it; when it closes, put the focus back there.
+// Dialogs keep the Tab key inside them. Closed drawers are inert, so Tab does not go into them.
+let focKbd=[];   // the last two controls that had keyboard focus
+function bindFocus(){document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.matches&&t.matches(':focus-visible'))focKbd=[t,focKbd[0]]},true);
+  const panels=[...$$('.modal'),...$$('.drawer'),$('#tilesMenu')].filter(Boolean);
+  for(const el of panels){if(el.classList.contains('drawer'))el.inert=!el.classList.contains('show');let was=el.classList.contains('show');
+    new MutationObserver(()=>{const on=el.classList.contains('show');if(on===was)return;was=on;if(el.classList.contains('drawer'))el.inert=!on;
+      if(on){const a=document.activeElement;   // only a keyboard user gets the focus back; after a mouse click the arrow keys must still move the video
+        el._opener=a&&a!==document.body&&!el.contains(a)?(a.matches(':focus-visible')?a:null):(el.contains(a)&&a.matches(':focus-visible')?focKbd.find(x=>x&&x!==a&&!el.contains(x))||null:null);
+        if(el.classList.contains('modal'))setTimeout(()=>{if(el.classList.contains('show')&&!el.contains(document.activeElement)){const f=el.querySelector('[autofocus],input:not([disabled]):not([type=hidden]),button.primary:not([disabled]),button:not([disabled])');if(f)f.focus()}},0)}
+      else{const a=document.activeElement,o=el._opener;el._opener=null;if((!a||a===document.body||el.contains(a))&&o&&o.isConnected&&!o.closest('[inert]')&&o.offsetParent!==null)o.focus({preventScroll:true})}
+    }).observe(el,{attributes:true,attributeFilter:['class']})}
+  document.addEventListener('keydown',e=>{if(e.key!=='Tab')return;const m=[...$$('.modal.show')].pop();if(!m)return;
+    const f=[...m.querySelectorAll('button,input,select,textarea,a[href],[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent!==null);if(!f.length)return;
+    const i=f.indexOf(document.activeElement);if(e.shiftKey&&(i<=0)){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&(i===f.length-1||i<0)){e.preventDefault();f[0].focus()}},true)}
+function bindDrawers(){bindFocus();for(const id of ['#setPanel','#evPanel'])new MutationObserver(syncDrawer).observe($(id),{attributes:true,attributeFilter:['class']});
   window.addEventListener('resize',syncDrawer);$('#setPanel').addEventListener('change',()=>setTimeout(markChanged,0));$('#setPanel').addEventListener('click',e=>{
     const b=e.target.closest('.rst');if(b){const k=b.dataset.k;S.set[k]=JSON.parse(JSON.stringify(DEF[k]));save();
       if(k==='mapTiles')setMapTiles(DEF.mapTiles);if(k==='mapSrc'&&MAP)MAP.setSource(S.set.mapSrc);
@@ -2699,7 +2722,8 @@ $('#bSet').innerHTML=IC.gear;$('#bHelp').innerHTML=IC.help;$('#bFs').innerHTML=I
 }
 function toggleFs(){if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else document.documentElement.requestFullscreen().catch(()=>showMsg('Fullscreen is not allowed here',IN_FRAME?'DashLens is shown inside another page, and that page blocks fullscreen. Open DashLens in its own browser tab, then press F.':'The browser blocked fullscreen. Click on the page once, then press F again, or use the browser\'s own fullscreen command (F11).'))}
 function onKey(e){
-  const tg=e.target;if(tg&&(tg.tagName==='INPUT'&&tg.type!=='range'&&tg.type!=='checkbox'||tg.tagName==='TEXTAREA'))return;
+  const tg=e.target;if(e.key==='Escape'&&tg&&tg.id==='keyQ'&&tg.value){tg.value='';tg.dispatchEvent(new Event('input',{bubbles:true}));e.preventDefault();return}
+  if(tg&&(tg.tagName==='INPUT'&&tg.type!=='range'&&tg.type!=='checkbox'||tg.tagName==='TEXTAREA')&&e.key!=='Escape')return;
   if(tg&&tg.tagName==='SELECT'&&e.key!=='Escape')return;
   if((e.ctrlKey||e.metaKey)&&!e.altKey&&(e.key==='z'||e.key==='Z')&&!e.shiftKey&&LH.length){e.preventDefault();layUndo();return}
   if(e.ctrlKey||e.metaKey||e.altKey)return;
@@ -2718,7 +2742,7 @@ function onKey(e){
   else if(k==='m'||k==='M')$('#bMute').click();else if(k==='f'||k==='F')toggleFs();
   else if(k==='c'||k==='C'){if(MAP){MAP.follow=true;MAP.dirty=true;MAP.syncBtn()}}
   else if(k==='p'||k==='P')addPin();
-  else if(k==='s'||k==='S')snapshot(S.maxTile&&P.has(S.maxTile)?S.maxTile:S.leadKey);
+  else if(k==='s'||k==='S')snapshot(mainCam());
   else if(k==='?'){const h=$('#helpModal');h.classList.toggle('show');if(h.classList.contains('show'))setTimeout(()=>$('#keyQ').focus(),0)}
   else if(k==='Escape'){for(const id of ['#savedModal','#helpModal','#repModal','#detModal','#setPanel','#evPanel','#tilesMenu','#dataNote',...(EX.run?[]:['#evdModal'])])$(id).classList.remove('show');hideMsg();if(S.maxTile){S.maxTile=null;applyLayout()}}
   else if(/^[0-9]$/.test(k)){if(k==='0')setMode('grid');else{const id=visVids()[+k-1];if(id)toggleFocus(id)}}
@@ -2732,7 +2756,7 @@ function onKey(e){
 MONO=getComputedStyle(document.body).getPropertyValue('--mono')||'monospace';
 tlInit();bindControls();bindSettings();bindFiles();ensureTiles();applyLayout();buildChRows();adaptUI();syncEvNav();
 $('#bLoadCancel').onclick=cancelLoad;syncPriv();
-$('#bForget').onclick=()=>{store.set('resume',{});PINS.list=[];PINS.fp=L.segs.length?libFp():null;renderPins();TL.dirty=true;toast('Saved positions and pins forgotten')};
+$('#bForget').onclick=e=>{const b=e.currentTarget;if(!b._arm){b._arm=1;b.textContent='Click again to forget';setTimeout(()=>{b._arm=0;b.textContent='Forget'},3000);return}b._arm=0;b.textContent='Forget';store.set('resume',{});PINS.list=[];PINS.fp=L.segs.length?libFp():null;renderPins();TL.dirty=true;toast('Saved positions and pins forgotten')};
 $('#bRangeX').onclick=()=>{EX.inT=EX.outT=null;syncEvd()};
 $('#bMsgX').innerHTML=IC.x;$('#bMsgX').onclick=hideMsg;$('#bSumX').innerHTML=IC.x;$('#bSumX').onclick=()=>{$('#sumCard').hidden=true};
 $('#bSumDet').onclick=()=>showDetails();$('#bDetX').onclick=()=>$('#detModal').classList.remove('show');$('#detModal').onclick=e=>{if(e.target.id==='detModal')e.target.classList.remove('show')};

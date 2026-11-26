@@ -137,6 +137,12 @@ The timeline is the centre of the product.
 - **Tooltips:** only on icon buttons, with the name and the key. Show after 400 ms; at once if another tooltip
   closed less than 500 ms ago; at once on keyboard focus. Hide on blur and Esc. The pointer can move onto the
   tooltip [WCAG 1.4.13]. Width at most 250 px, 4 px from the target. No tooltip during a drag.
+- **Panels and focus:** a dialog keeps Tab inside it, and Esc closes the top panel (also from a text box; in a search
+  box the first Esc clears the text). When a panel closes, a keyboard user gets the focus back on the control that
+  opened it. After a mouse click the focus is not moved, so the arrow keys still move the video. A closed drawer is
+  `inert`, so Tab never goes into it.
+- **No error for a normal end:** "no more events" and "end of the footage" are short toasts, and Previous / Next
+  event are off when there is no event in that direction. The error box is only for real problems.
 - **Zoom:** drawers, dialogs, lists and the summary fit 320 CSS px wide without horizontal scroll [WCAG 1.4.10].
   Video, map and timeline are exempt.
 
