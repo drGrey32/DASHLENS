@@ -131,7 +131,9 @@ The timeline is the centre of the product.
 
 - **"Private by design" must stay exactly true.** The map tiles come from an external server. Say so at the map
   ("Map tiles are loaded from the internet. Your video stays on this computer.") and give a switch to turn the map
-  off.
+  off. Both open from a globe button with the map controls, so no band covers the map. The globe's tooltip says
+  whether tiles are on, and it is dimmed when they are off. The tile credit stays on the map as one small line,
+  because the tile provider requires it.
 - **One line in the app says that nothing is uploaded and nothing is tracked.** Keep it true for every new feature.
 - **Make the claim checkable** [R]. The "Private" status counts the internet requests from the browser's own log,
   names their hosts, and tells the user how to check it in the browser's Network tab.
