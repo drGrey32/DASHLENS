@@ -175,8 +175,10 @@ control that opened it.
 
 ## 13. The incident flow [R]
 
-Find, review, save. After loading, propose the strongest moment and say why it was chosen ("0.64 g. Both cameras
-saved it as an event recording."). Its main button goes to 5 seconds before the event, paused. The clip range stays
+Find, review, save. Nothing about events opens by itself on startup or after loading: no events list and no
+event card (the owner's choice). The events list (the "Events" button) has "Show the strongest moment", which opens a
+card that says why it was chosen ("0.64 g. Both cameras saved it as an event recording."). Its main button goes to 5
+seconds before the event, paused. The clip range stays
 visible as a chip until it is cleared. The flow ends on the "Your evidence is saved" screen. Write this flow to be
 calm and plain: no jokes, no exclamation marks, no blame (GOV.UK error rules).
 

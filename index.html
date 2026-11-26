@@ -495,6 +495,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 <aside class="drawer" id="evPanel" aria-label="Events">
   <div class="shead"><h2>Events</h2><button class="btn ib" id="bEvX" title="Close events"></button></div>
   <p class="sdesc">Event recordings and moments of firm or hard braking, acceleration or turning. Select one to go to 5 seconds before it.</p>
+  <button class="btn" id="bShowInc" hidden>Show the strongest moment</button>
   <ol id="evRows"></ol>
   <section id="pinSec"><h3>Your pins</h3><p class="sdesc">Mark moments with P or the Pin button. Each pin can have a note. Pins go into the incident summary, and they are kept for the next time you open this footage.</p><ol id="pinRows"></ol></section>
 </aside>
@@ -657,7 +658,7 @@ function loadSettings(){const s=store.get('settings',{}),o=JSON.parse(JSON.strin
   if(o.mapSrc==='none'){o.mapTiles=false;o.mapSrc='esri-hyb'}   // the old "No map" style is now the map tiles switch
   if(!s.units){try{const lc=(navigator.language||'').toLowerCase();if(/^en-(us|gb)$|-(lr|mm)$/.test(lc))o.units='mph'}catch(e){}}   // first run: speed unit from the locale
   return o}
-const S={set:loadSettings(),T:0,playing:false,scrubbing:false,scrubExact:false,stalled:false,notReadySince:0,lastTick:performance.now(),
+const S={set:loadSettings(),T:0,incHidden:true,playing:false,scrubbing:false,scrubExact:false,stalled:false,notReadySince:0,lastTick:performance.now(),
   maxTile:null,wasPlaying:false,leadKey:null,lastMoveAt:0,stallSince:0};
 let saveT;function save(){if(typeof L!=='undefined'&&L.keys.length)S.set.layBy[L.keys.length]=JSON.parse(JSON.stringify(S.set.lay));clearTimeout(saveT);saveT=setTimeout(()=>store.set('settings',S.set),300)}
 window.addEventListener('pagehide',()=>{if(saveT){clearTimeout(saveT);store.set('settings',S.set)}});
@@ -1384,7 +1385,7 @@ async function ingest(items,replace){
   if(!vids.length){progress(null);showMsg('No dashcam videos found',
     `There are no .MP4 or .MOV files in ${items.length?'what you opened':'this folder'}${side.length?` (only ${side.length} GPS or text file${side.length>1?'s':''})`:''}. Choose the folder that holds the Normal, Event and Parking folders, or the whole SD card.`,[['Open another folder',()=>confirmReplace(pickFolder),true]]);return}
   if(replace){S.loadHidden=false;hideMsg();$('#sumCard').hidden=true}
-  if(replace&&vids.length){pause();resetLibrary();EX.inT=EX.outT=null;S.incHidden=false;const ic=$('#incCard');ic.hidden=true;ic._k=null}
+  if(replace&&vids.length){pause();resetLibrary();EX.inT=EX.outT=null;S.incHidden=true;const ic=$('#incCard');ic.hidden=true;ic._k=null}
   const known=new Set(L.segs.map(s=>s.path+'|'+s.file.size));let fresh=[];let nv=0,lastY=performance.now();
   for(const it of vids){if(++nv%100===0&&performance.now()-lastY>40){progress('scan',nv/vids.length,nv,vids.length);await new Promise(r=>setTimeout(r));lastY=performance.now()}const path=it.path||it.file.webkitRelativePath||it.file.name;const k=path+'|'+it.file.size;if(known.has(k))continue;known.add(k);
     const p=parseName(it.file.name,path);const seg={file:it.file,path,name:it.file.name,nkey:(p.stem+'.'+((it.file.name.match(/\.([^.]+)$/)||[])[1]||'')).toLowerCase(),copyName:p.copyName,ch:p.ch||'A',chSrc:p.ch?'name':null,tsrc:p.t!=null?'name':null,start:p.t,start0:p.t,corr:0,dur:null,durKnown:false,cat:p.cat||catOf(path),meta:null,url:null,group:p.group};
@@ -1694,7 +1695,7 @@ function csvRange(){if(EX.inT!=null&&EX.outT!=null){const [a,b]=evdRange();retur
 function saveCsv(){if(!L.segs.length)return;const [a,b]=csvRange(),c=teleCsv(a,b);
   if(!c){showMsg('No telemetry to save','These files have no GPS or G-sensor data in this part of the footage, so there is nothing to put in the table.');return}
   download(new Blob([c],{type:'text/csv'}),`dashlens_telemetry_${stamp(a)}.csv`);toast('Telemetry table saved to your downloads folder',2400)}
-function openEvents(){renderPins();$('#setPanel').classList.remove('show');renderEvents();$('#evPanel').classList.add('show');const b=$('#evRows button');(b||$('#bEvX')).focus()}
+function openEvents(){renderPins();$('#bShowInc').hidden=!evList().length;$('#setPanel').classList.remove('show');renderEvents();$('#evPanel').classList.add('show');const b=$('#evRows button');(b||$('#bEvX')).focus()}
 function syncEvNav(){const n=L.segs.length?evList().length:0;$('#bEvents').innerHTML=`<span>Events${n?` (${n})`:''}</span>`;for(const id of ['#bPrevE','#bNextE'])$(id).disabled=!n}
 
 /* =====================================================================
@@ -2513,7 +2514,7 @@ function bindControls(){
 $('#bSet').innerHTML=IC.gear;$('#bHelp').innerHTML=IC.help;$('#bFs').innerHTML=IC.full;$('#bSetX').innerHTML=IC.x;
   $('#bPrevF').innerHTML=IC.prevF;$('#bNextF').innerHTML=IC.nextF;$('#bBack').innerHTML=IC.back10;$('#bFwd').innerHTML=IC.fwd10;$('#bFrB').innerHTML=IC.frB;$('#bFrF').innerHTML=IC.frF;
   $('#bPrevE').innerHTML=IC.triL+'<span>Event</span>';$('#bNextE').innerHTML='<span>Event</span>'+IC.triR;$('#bEvX').innerHTML=IC.x;
-  $('#bPrevE').onclick=()=>evJump(-1);$('#bNextE').onclick=()=>evJump(1);$('#bEvents').onclick=()=>{$('#evPanel').classList.contains('show')?$('#evPanel').classList.remove('show'):openEvents()};$('#bEvX').onclick=()=>$('#evPanel').classList.remove('show');
+  $('#bPrevE').onclick=()=>evJump(-1);$('#bNextE').onclick=()=>evJump(1);$('#bEvents').onclick=()=>{$('#evPanel').classList.contains('show')?$('#evPanel').classList.remove('show'):openEvents()};$('#bShowInc').onclick=()=>{S.incHidden=false;$('#incCard')._k=null;$('#evPanel').classList.remove('show');renderInc()};$('#bEvX').onclick=()=>$('#evPanel').classList.remove('show');
   $('#evRows').onclick=e=>{const b=e.target.closest('button[data-i]');if(!b)return;const x=evList()[+b.dataset.i];if(x){seekTo(x.jump);const len=TL.view.c1-TL.view.c0;if(c2x(t2c(x.jump))<0||c2x(t2c(x.jump))>TL.w){TL.view.c0=t2c(x.jump)-len*0.15;TL.view.c1=TL.view.c0+len;clampView()}TL.dirty=true;renderEvents()}};
   $('#bEvd').onclick=openEvd;$('#bEvdX').onclick=()=>{if(!EX.run)$('#evdModal').classList.remove('show')};$('#evdModal').onclick=e=>{if(e.target.id==='evdModal'&&!EX.run)e.target.classList.remove('show')};
   $('#bSetIn').onclick=()=>setInOut('in');$('#bSetOut').onclick=()=>setInOut('out');$('#bEvdGo').onclick=saveEvidence;$('#bSavedX').onclick=()=>$('#savedModal').classList.remove('show');$('#bEvdCancel').onclick=()=>{EX.cancel=true};$('#bSumGo').onclick=incidentSummary;
