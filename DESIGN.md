@@ -172,7 +172,8 @@ The timeline is the centre of the product.
   the dark background.
 - **Icons:** one family, one stroke width (2 on the 24 px grid). 16 px in 24 px controls and lists, 20 px in 32 px
   icon-only buttons.
-- **Active camera:** a 2 px accent outline on the main camera tile. Keys 1–9 select a camera; 0 shows the grid.
+- **Camera feeds:** each feed shows only its camera name (Front, Rear …), never the file name; the file name is in the
+  ⓘ panel. The main camera has no highlight. Keys 1–9 select a camera; 0 shows the grid.
 - **Warnings** use an icon and words, never an amber or orange colour, because orange is the accent.
 
 ## 9. Privacy and trust

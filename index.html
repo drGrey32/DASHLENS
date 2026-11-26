@@ -131,7 +131,6 @@ select.btn{padding:0 6px;appearance:auto}
 .split.v::after{left:5px;width:2px;top:0;bottom:0}
 .split.h::after{top:5px;height:2px;left:0;right:0}
 .split:hover::after,.split.drag::after{background:var(--acc)}
-.tile.focus .tin{box-shadow:inset 0 0 0 2px var(--acc)}
 .tile.panel .tlab{cursor:default;padding:2px 8px}
 .tsub:empty{display:none}
 body.single .tb[data-act=focus],body.single .tb[data-act=max],body.single .tb[data-act=audio],body.single .tile .grip{display:none}
@@ -710,7 +709,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${c.labe
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.6.4';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.6.5';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -1918,7 +1917,7 @@ function updateHUD(){
   laneVals();
   if($('#evPanel').classList.contains('show')){const ev=evList(),cur=ev.findIndex(x=>T>=x.jump&&T<=Math.max(x.e,x.t)+5000);if(cur!==S.evCur){S.evCur=cur;const f=document.activeElement&&document.activeElement.closest('#evRows')?document.activeElement.dataset.i:null;renderEvents();if(f!=null){const b=$(`#evRows [data-i="${f}"]`);if(b)b.focus({preventScroll:true})}const c=$('#evRows .cur');if(c)c.scrollIntoView({block:'nearest'})}}
 }
-function updateTileSub(k){const p=P.get(k);if(!p)return;const s=p.cur;$('.tsub',p.tile).textContent=s?s.name:''}
+function updateTileSub(k){const p=P.get(k);if(!p)return;const s=p.cur;$('.tsub',p.tile).textContent=''}   // the feed shows only the camera name; the file name is in the ⓘ panel
 function updatePlayBtn(){$('#bPlay').innerHTML=S.playing?IC.pause:IC.play}
 
 /* =====================================================================
