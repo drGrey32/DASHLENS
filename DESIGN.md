@@ -220,6 +220,8 @@ This is the job that the product exists for.
 - **Durations**: about 100 ms for press feedback, 125–200 ms for tooltips and small menus, 200–300 ms for dialogs and
   drawers; exits are shorter than entrances. Animate only `transform` and `opacity`; never `transition: all`. Progress bars
   grow with `transform: scaleX()`, not `width`.
+- **Idle**: when nothing changes (for example, the video is paused), nothing is drawn again. Parts that do not change
+  each frame (the overview strip, map tiles and the route) are drawn once into a layer and copied.
 - **Loading**: show a loader only after 150–300 ms, and keep it at least 300–500 ms, so it does not flash.
 - **Toasts** stay 6 s. Hover or focus stops the timer. A toast with an action stays until the user closes it.
 

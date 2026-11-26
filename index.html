@@ -709,7 +709,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${c.labe
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.6.6';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.6.7';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -1627,10 +1627,12 @@ function tick(now){
     else if(mode==='hold'){if(allReady()||now-S.stallSince>2500){S.stalled=false;mode='play'}}
     for(const p of P.values())p.update(S.T,S.playing&&mode!=='scrub'?mode:(S.scrubbing?'scrub':'paused'),now);
     if(mode==='play'&&S.playing){if(!allReady()){if(!S.notReadySince)S.notReadySince=now;else if(now-S.notReadySince>260){S.stalled=true;S.stallSince=now;S.notReadySince=0;for(const p of P.values())p.idle()}}else S.notReadySince=0}
-    drawPlayhead();
+    // redraw the playhead, overview and readouts only when something that they show has changed
+    const fk=S.T+'|'+TL.view.c0+'|'+TL.view.c1+'|'+TL.w+'|'+PINS.list.length+'|'+EX.inT+'|'+EX.outT+'|'+TL.hoverT+'|'+S.stalled+'|'+S.playing,fch=fk!==S._fk;S._fk=fk;
+    if(fch)drawPlayhead();
     if(MAP)MAP.frame();
     if(ACC)ACC.frame();
-    if(now-hudLast>90){hudLast=now;updateHUD()}
+    if(fch)S._hudDue=true;if(now-hudLast>(S._hudDue?90:1000)){hudLast=now;S._hudDue=false;updateHUD()}
     if(now-(S.infoAt||0)>250){S.infoAt=now;for(const k of P.keys())renderInfo(k)}
   }
   if(TL.dirty)drawTL();
@@ -1720,7 +1722,7 @@ function addPin(){if(!L.segs.length)return;const t=S.T;if(PINS.list.some(p=>Math
   // the picture is taken now, losslessly, so the summary can show the pinned frame; it is not stored between visits
   const k=mainCam(),p=P.get(k),v=p&&p.shown;let img=null;
   try{if(v&&v.readyState>=2&&v.videoWidth){const c=document.createElement('canvas'),sc=Math.min(1,960/v.videoWidth);c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);const g=c.getContext('2d'),cf=chCfg(k);
-    g.translate(c.width/2,c.height/2);if(cf.flip)g.scale(1,-1);if(cf.mirror)g.scale(-1,1);g.drawImage(v,-c.width/2,-c.height/2,c.width,c.height);img={src:c.toDataURL('image/png'),cam:chLabel(k)}}}catch(e){}
+    g.translate(c.width/2,c.height/2);if(cf.flip)g.scale(1,-1);if(cf.mirror)g.scale(-1,1);g.drawImage(v,-c.width/2,-c.height/2,c.width,c.height);const im={cam:chLabel(k)};img=im;c.toBlob(b=>{im.blob=b},'image/png')}}catch(e){}   // PNG is made off the main thread and kept as a Blob
   PINS.list.push({t,note:'',img});PINS.list.sort((a,b)=>a.t-b.t);saveResume();TL.dirty=true;renderPins();toast(`Pinned ${fTime(t)}. Add a note in the events list.`,2400)}
 function pinTag(c,n,x,y,h){const t=String(n);c.font='600 12px "IBM Plex Sans",system-ui';const w=Math.max(h,Math.ceil(c.measureText(t).width)+8);
   c.beginPath();if(c.roundRect)c.roundRect(x-w/2,y-h/2,w,h,h/2);else c.rect(x-w/2,y-h/2,w,h);c.fillStyle='#ededed';c.fill();c.lineWidth=1.5;c.strokeStyle='#141414';c.stroke();
@@ -1734,8 +1736,8 @@ function pinsHtml(a,b){const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g
 function gAtWord(t){const A=L.A;if(!A)return '';const i=bsearch(A.t,t,A.n);if(i<0||Math.abs(A.t[i]-t)>1000)return '';return `, ${A.ev[i].toFixed(2)} g`}
 /* ---------- telemetry as CSV: one row for each recorded reading, nothing filled in or smoothed ---------- */
 function teleCsv(a,b){const rows=new Map(),row=t=>{t=Math.round(t);let r=rows.get(t);if(!r){r={t};rows.set(t,r)}return r};
-  const G=L.G;if(G)for(let i=0;i<G.n;i++){if(G.t[i]<a||G.t[i]>b)continue;const r=row(G.t[i]);r.lat=G.lat[i].toFixed(7);r.lon=G.lon[i].toFixed(7);r.kmh=G.spd[i].toFixed(1);r.mph=(G.spd[i]/1.609344).toFixed(1);r.hd=Number.isFinite(G.trk[i])?Math.round(G.trk[i]):'';if(G.brk[i])r.brk=1}
-  const A=L.A;if(A)for(let i=0;i<A.n;i++){if(A.t[i]<a||A.t[i]>b)continue;const r=row(A.t[i]);r.gl=A.lon[i].toFixed(3);r.gt=A.lat[i].toFixed(3);r.gv=A.vert?A.vert[i].toFixed(3):'';r.g=A.ev[i].toFixed(3)}
+  const G=L.G;if(G)for(let i=Math.max(0,bsearch(G.t,a,G.n));i<G.n&&G.t[i]<=b;i++){if(G.t[i]<a)continue;const r=row(G.t[i]);r.lat=G.lat[i].toFixed(7);r.lon=G.lon[i].toFixed(7);r.kmh=G.spd[i].toFixed(1);r.mph=(G.spd[i]/1.609344).toFixed(1);r.hd=Number.isFinite(G.trk[i])?Math.round(G.trk[i]):'';if(G.brk[i])r.brk=1}
+  const A=L.A;if(A)for(let i=Math.max(0,bsearch(A.t,a,A.n));i<A.n&&A.t[i]<=b;i++){if(A.t[i]<a)continue;const r=row(A.t[i]);r.gl=A.lon[i].toFixed(3);r.gt=A.lat[i].toFixed(3);r.gv=A.vert?A.vert[i].toFixed(3):'';r.g=A.ev[i].toFixed(3)}
   let car=false;for(const s of L.segs)if(s.tele&&s.tele.smp&&s.meta&&s.meta.sei&&s.ch===L.gpsCh){const n=s.tele.smp.length,st=stepOf(s,n);
     s.tele.smp.forEach((x,i)=>{if(!x||!x.car)return;const t=s.start+i*st;if(t<a||t>b)return;const c=x.car,r=row(t);car=true;
       r.gear=TESLA_GEAR[c.gear]||'';r.brake=c.brake?1:0;r.bl=c.blL?1:0;r.br=c.blR?1:0;r.ap=TESLA_AP[c.ap]||'';r.ped=Number.isFinite(c.pedal)?+c.pedal.toFixed(3):'';r.st=Number.isFinite(c.steer)?+c.steer.toFixed(1):''})}
@@ -1835,7 +1837,7 @@ async function saveEvidence(){
       pause();seekTo(T);for(let i=0;i<60&&!allReady();i++)await sleep(50);await sleep(150);
       const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
       const extra=`<h2>Files in this evidence folder</h2><p>Clip: ${fTime(a)} to ${fTime(b)} (${fDur(b-a)}). Check a file with <code>sha256sum</code> (Linux), <code>shasum -a 256</code> (Mac) or <code>certutil -hashfile FILE SHA256</code> (Windows).</p><table>${(sums.length?sums:[[null,clipName],...origs.map(o=>[null,o.name])]).map(([h,n])=>`<tr><th style="width:auto;font-family:monospace;font-weight:400">${esc(n)}</th><td style="font-family:monospace;font-size:12px;word-break:break-all">${h||''}</td></tr>`).join('')}</table>${origs.length?`<p><small>Copied from: ${origs.map(o=>esc(o.src)).join(', ')}</small></p>`:''}`;
-      sumBlob=new Blob([summaryHtml(T,extra)],{type:'text/html'});await put('incident_summary.html',sumBlob);files.splice(1,0,{name:'incident_summary.html',blob:sumBlob,d:'Date, place, speed, peak G-force, a picture from each camera, and the file names. Open it and print it, or save it as a PDF. Send this one too.'});
+      await pinSrcs();sumBlob=new Blob([summaryHtml(T,extra)],{type:'text/html'});pinSrcsDrop();await put('incident_summary.html',sumBlob);files.splice(1,0,{name:'incident_summary.html',blob:sumBlob,d:'Date, place, speed, peak G-force, a picture from each camera, and the file names. Open it and print it, or save it as a PDF. Send this one too.'});
       if(want.hash)sums.push([await sha256(sumBlob),fname('incident_summary.html')])}
     next();if(sums.length){const t=new Blob([sums.map(([h,n])=>`${h}  ${n}`).join('\n')+'\n'],{type:'text/plain'});await put('checksums.sha256.txt',t);files.push({name:'checksums.sha256.txt',blob:t,d:'A SHA-256 fingerprint of every file, to show later that nothing was changed.'})}
     step(1);showSaved(files,dir?`They are in the new folder ${name}.`:'They are in your Downloads folder.',a,b,sumBlob)}
@@ -1874,10 +1876,15 @@ footer{margin-top:28px;font-size:13px;color:#555}@media print{.bar{display:none}
 <table>${rows.join('')}</table>${pinsHtml(EX.inT!=null&&EX.outT!=null?evdRange()[0]:null,EX.inT!=null&&EX.outT!=null?evdRange()[1]:null)}<h2>Cameras and files</h2><table>${cams.join('')}</table>${imgs.length?`<h2>Pictures at ${fTime(T)}</h2>${imgs.join('')}`:''}${extra||''}
 <footer>The original video files were not changed. Times are the dashcam's own clock${L.camOff!=null&&Math.abs(L.camOff)>=1000?`; the GPS clock differs by ${fDur(Math.abs(L.camOff))} (h:mm:ss)`:''}. Speed and position come from the camera's GPS; G-force comes from its G-sensor.</footer></body></html>`;
   return html}
-function incidentSummary(){if(!L.segs.length)return;const T=S.T,html=summaryHtml(T);
-  const blob=new Blob([html],{type:'text/html'}),url=URL.createObjectURL(blob),w=IN_FRAME?null:window.open(url,'_blank');
-  if(!w){download(blob,`incident_summary_${stamp(T)}.html`);toast('Summary page saved to your downloads folder. Open it to print it.',4000)}
-  setTimeout(()=>URL.revokeObjectURL(url),120000)}
+// the summary page embeds the pin pictures, so they are turned into data URLs only while the page is built
+function blobUrl64(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.onerror=()=>r(null);f.readAsDataURL(b)})}
+async function pinSrcs(){for(const p of PINS.list)if(p.img&&p.img.blob&&!p.img.src)p.img.src=await blobUrl64(p.img.blob)}
+function pinSrcsDrop(){for(const p of PINS.list)if(p.img&&p.img.blob)delete p.img.src}
+function incidentSummary(){if(!L.segs.length)return;const T=S.T,w=IN_FRAME?null:window.open('','_blank');   // the window opens now, so the browser does not block it
+  pinSrcs().then(()=>{const html=summaryHtml(T);pinSrcsDrop();
+    const blob=new Blob([html],{type:'text/html'}),url=URL.createObjectURL(blob);
+    if(w&&!w.closed)w.location.href=url;else{download(blob,`incident_summary_${stamp(T)}.html`);toast('Summary page saved to your downloads folder. Open it to print it.',4000)}
+    setTimeout(()=>URL.revokeObjectURL(url),120000)})}
 
 /* =====================================================================
    HUD
@@ -1904,12 +1911,12 @@ function accAt(T){const A=L.A;if(!A)return null;const i=bsearch(A.t,T,A.n);if(i<
 let hudCache={};
 function setTxt(id,v){if(hudCache[id]!==v){hudCache[id]=v;const e=document.getElementById(id);if(e)e.innerHTML=v}}
 function updateHUD(){syncEvPos();
-  const T=S.T;setTxt('hDate',fDate(T));setTxt('hTime',fTime(T));$('#tl').setAttribute('aria-valuetext',fDate(T)+' '+fTime(T));
+  const T=S.T;setTxt('hDate',fDate(T));setTxt('hTime',fTime(T));{const v=fDate(T)+' '+fTime(T);if(hudCache.tlv!==v){hudCache.tlv=v;$('#tl').setAttribute('aria-valuetext',v)}}
   const g=gpsAt(T);const mph=S.set.units==='mph';setTxt('hSpdU',g?(mph?'mph':'km/h')+' (GPS)':!L.teleDone?(mph?'mph':'km/h')+' (GPS)':L.G?'No GPS in this clip':'No GPS in these files');
   const ar=$('#hArrow');
-  if(g){setTxt('hSpd',String(Math.round(g.spd/(mph?1.609344:1))));setTxt('hHead',`${COMPASS[Math.round(g.trk/22.5)%16]} ${pad(Math.round(g.trk)%360,3)}°`);ar.classList.remove('off');
-    const want=g.trk,prev=ar._r==null?want:ar._r;const r=prev+(((want-prev)%360+540)%360-180);ar._r=r;ar.style.transform=`rotate(${r}deg)`}
-  else{setTxt('hSpd','—');setTxt('hHead',L.G?'no GPS fix':'no GPS');ar.classList.add('off')}
+  if(g){setTxt('hSpd',String(Math.round(g.spd/(mph?1.609344:1))));setTxt('hHead',`${COMPASS[Math.round(g.trk/22.5)%16]} ${pad(Math.round(g.trk)%360,3)}°`);if(ar.classList.contains('off'))ar.classList.remove('off');
+    const want=g.trk,prev=ar._r==null?want:ar._r;const r=prev+(((want-prev)%360+540)%360-180);if(r!==ar._r||ar._r==null){ar._r=r;ar.style.transform=`rotate(${r}deg)`}}
+  else{setTxt('hSpd','—');setTxt('hHead',L.G?'no GPS fix':'no GPS');if(!ar.classList.contains('off'))ar.classList.add('off')}
   {const hg=$('#hG');hg.hidden=!L.A;if(L.A){const a=accAt(T);let v='—';
     if(a){const parts=[];if(Math.abs(a.lon)>=0.05)parts.push([a.lon>0?'Speeding up':'Braking',Math.abs(a.lon)]);if(Math.abs(a.lat)>=0.05)parts.push([a.lat>0?'Right turn':'Left turn',Math.abs(a.lat)]);
       parts.sort((x,y)=>y[1]-x[1]);v=parts.length?`${parts[0][0]} ${parts[0][1].toFixed(2)} g <i>${gWord(parts[0][1])}</i>`:'Steady'}
@@ -2092,8 +2099,8 @@ function stagePointerDown(e){
   const tile=e.target.closest('.tile.vid');if(!tile||e.target.closest('button'))return;
   {const p=P.get(tile.dataset.id);if(p&&p.zoom.z>1.001&&!e.target.closest('.tbar')&&!e.target.closest('.vinfo')){e.preventDefault();const r=$('.tin',tile).getBoundingClientRect(),sx=e.clientX,sy=e.clientY,f0=p.zoom.fx,g0=p.zoom.fy;tile.classList.add('panning');
     const mv=ev=>{p.zoom.fx=f0+(ev.clientX-sx)/r.width;p.zoom.fy=g0+(ev.clientY-sy)/r.height;p.applyZoom()};
-    const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);tile.classList.remove('panning')};
-    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);return}}
+    const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);tile.classList.remove('panning')};
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return}}
   if(e.target.closest('.tlab')){e.preventDefault();swapDrag(e,tile,tile.dataset.id)}
 }
 function swapDrag(e,tile,id){
@@ -2101,9 +2108,9 @@ function swapDrag(e,tile,id){
   const mv=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved&&Math.hypot(dx,dy)<6)return;moved=true;tile.classList.add('dragging');tile.style.transform=`translate(${dx}px,${dy}px)`;
     const t=document.elementsFromPoint(ev.clientX,ev.clientY).map(x=>x.closest&&x.closest('.tile.vid')).find(x=>x&&x!==tile)||null;
     if(t!==target){if(target)target.classList.remove('drop');target=t;if(t)t.classList.add('drop')}};
-  const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);tile.classList.remove('dragging');tile.style.transform='';
+  const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);tile.classList.remove('dragging');tile.style.transform='';
     if(target){target.classList.remove('drop');swapTiles(id,target.dataset.id)}};
-  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
 }
 function tileAction(id,act){
   if(act==='max'){toggleMax(id);return}
@@ -2178,7 +2185,7 @@ class MiniMap{
     this.cv.addEventListener('dblclick',e=>{e.preventDefault();this.zoomBy(1,e)});
     this.syncBtn();
   }
-  setSource(id){if(!MAPSRC[id]||id==='none'){id='esri-hyb';S.set.mapSrc=id}if(!S.set.mapTiles)id='none';this.src=MAPSRC[id];this.tiles.clear();this.errs=0;this.oks=0;this.attrEl.textContent=this.src.attr;this.attrEl.title=this.src.attr;this.attrEl.hidden=!this.src.attr;
+  setSource(id){if(!MAPSRC[id]||id==='none'){id='esri-hyb';S.set.mapSrc=id}if(!S.set.mapTiles)id='none';this.src=MAPSRC[id];this.tiles.clear();this.errs=0;this.oks=0;this.attrEl.textContent=this.src.attr;this.attrEl.title=this.src.attr;this.bgv=(this.bgv|0)+1;this.attrEl.hidden=!this.src.attr;
     this.dirty=true}
   resize(){const r=this.cv.getBoundingClientRect();this.dpr=Math.min(2,window.devicePixelRatio||1);this.w=r.width;this.h=r.height;this.cv.width=Math.max(1,Math.round(r.width*this.dpr));this.cv.height=Math.max(1,Math.round(r.height*this.dpr));this.dirty=true}
   syncBtn(){const b=$('.tb[data-act=follow]',this.tile);if(!b)return;const has=!!L.G;this._hadG=has;b.disabled=!has;b.classList.toggle('on',has&&this.follow);b.classList.toggle('pas',has&&!this.follow);b.setAttribute('aria-pressed',String(has&&this.follow));
@@ -2189,49 +2196,61 @@ class MiniMap{
     this.z=nz;S.set.mapZ=nz;save();this.dirty=true}
   down(e){if(e.button!==0)return;const sx=e.clientX,sy=e.clientY,cx=this.cx,cy=this.cy;let moved=false;this.cv.setPointerCapture(e.pointerId);
     const mv=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved&&Math.hypot(dx,dy)<4)return;if(!moved){moved=true;this.follow=false;this.syncBtn()}const s=256*2**this.z;this.cx=cx-dx/s;this.cy=cy-dy/s;this.dirty=true};
-    const up=ev=>{this.cv.removeEventListener('pointermove',mv);this.cv.removeEventListener('pointerup',up);if(!moved)this.clickSeek(ev)};
-    this.cv.addEventListener('pointermove',mv);this.cv.addEventListener('pointerup',up)}
+    const up=ev=>{this.cv.removeEventListener('pointermove',mv);this.cv.removeEventListener('pointerup',up);this.cv.removeEventListener('pointercancel',up);if(!moved&&ev.type==='pointerup')this.clickSeek(ev)};
+    this.cv.addEventListener('pointermove',mv);this.cv.addEventListener('pointerup',up);this.cv.addEventListener('pointercancel',up)}
   clickSeek(e){const G=L.G;if(!G)return;const r=this.cv.getBoundingClientRect();const s=256*2**this.z;const wx=this.cx+(e.clientX-r.left-this.w/2)/s,wy=this.cy+(e.clientY-r.top-this.h/2)/s;
     let best=-1,bd=1e18;for(let i=0;i<G.n;i++){const dx=G.wx[i]-wx,dy=G.wy[i]-wy,d=dx*dx+dy*dy;if(d<bd){bd=d;best=i}}
     if(best>=0&&Math.sqrt(bd)*s<14){seekTo(G.t[best]);toast(`Jumped to ${fTime(G.t[best])}`,1200)}}
   tile_(li,z,x,y){const n=2**z;if(y<0||y>=n)return null;x=((x%n)+n)%n;const k=li+'/'+z+'/'+x+'/'+y;let t=this.tiles.get(k);if(t&&(this._tick=(this._tick||0)+1)%8===0){this.tiles.delete(k);this.tiles.set(k,t)}
-    if(!t){const fn=this.src.layers[li];if(!fn)return null;t={img:new Image(),ok:false};t.img.decoding='async';t.img.onload=()=>{t.ok=true;if(!li)this.oks++;this.dirty=true};t.img.onerror=()=>{t.err=true;if(!li)this.errs++;this.dirty=true};
+    if(!t){const fn=this.src.layers[li];if(!fn)return null;t={img:new Image(),ok:false};t.img.decoding='async';t.img.onload=()=>{t.ok=true;if(!li)this.oks++;this.bgv=(this.bgv|0)+1;this.dirty=true};t.img.onerror=()=>{t.err=true;if(!li)this.errs++;this.bgv=(this.bgv|0)+1;this.dirty=true};
       t.img.src=fn(z,x,y);this.tiles.set(k,t);if(this.tiles.size>360){for(const [kk,ot] of this.tiles){if(!ot.ok&&!ot.err)continue;this.tiles.delete(kk);if(this.tiles.size<=280)break}}}
     return t}
   frame(){const g=gpsAt(S.T);const key=g?g.wx.toFixed(9)+','+g.wy.toFixed(9)+','+g.trk.toFixed(1):'none';if(key!==this.last){this.last=key;this.dirty=true}
     if(this.follow&&g&&(Math.abs(this.cx-g.wx)>1e-12||Math.abs(this.cy-g.wy)>1e-12)){this.cx=g.wx;this.cy=g.wy;this.dirty=true}
     if(this.follow&&!g&&L.G&&!this.centered){this.cx=L.G.wx[0];this.cy=L.G.wy[0];this.centered=true;this.dirty=true}
     if(this.dirty&&this.w>0&&this.tile.style.display!=='none'){this.dirty=false;this.draw(g)}}
-  draw(g){
-    const c=this.ctx,W=this.w,H=this.h,z=this.z,s=256*2**z;c.setTransform(this.dpr,0,0,this.dpr,0,0);
-    c.fillStyle='#141414';c.fillRect(0,0,W,H);
-    const left=this.cx*s-W/2,top=this.cy*s-H/2;
-    // grid fallback
-    c.strokeStyle='#ffffff0c';c.lineWidth=1;const gs=64;for(let x=-((left%gs)+gs)%gs;x<W;x+=gs){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,H);c.stroke()}for(let y=-((top%gs)+gs)%gs;y<H;y+=gs){c.beginPath();c.moveTo(0,y+.5);c.lineTo(W,y+.5);c.stroke()}
-    if(this.src.layers.length){const x0=Math.floor(left/256),x1=Math.floor((left+W)/256),y0=Math.floor(top/256),y1=Math.floor((top+H)/256);
-      for(let li=0;li<this.src.layers.length;li++)for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const dx=tx*256-left,dy=ty*256-top;const t=this.tile_(li,z,tx,ty);
-        if(t&&t.ok){c.drawImage(t.img,dx,dy,256,256);continue}
+  // The map is drawn in two layers that are 256 px larger than the view on each side: the base (tiles and the route)
+  // and the top (clip range and pins). They are drawn again only when they change or the view leaves them.
+  // Each frame copies them and draws only the progress line and the car.
+  layers(left,top){const M=256,W=this.w,H=this.h,dpr=this.dpr,z=this.z,s=256*2**z,G=L.G,si=G?inSpan(S.T):-1;
+    if(this._G!==G){this._G=G;this.bgv=(this.bgv|0)+1}   // new GPS data
+    const key=[z,W,H,dpr,si,EX.inT,EX.outT,PINS.list.length,G?G.n:0,this.bgv|0,S.set.cats&&JSON.stringify(S.set.cats)].join('|');
+    const ly=this.ly;if(ly&&ly.key===key&&left>=ly.ax&&top>=ly.ay&&left+W<=ly.ax+W+2*M&&top+H<=ly.ay+H+2*M)return ly;
+    const ax=Math.round(left-M),ay=Math.round(top-M),LW=W+2*M,LH=H+2*M;
+    const mk=old=>{const cv=old||document.createElement('canvas');const w=Math.round(LW*dpr),h=Math.round(LH*dpr);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);c.setTransform(dpr,0,0,dpr,0,0);return [cv,c]};
+    const [bcv,c]=mk(ly&&ly.base),[tcv,t]=mk(ly&&ly.top);
+    c.fillStyle='#141414';c.fillRect(0,0,LW,LH);
+    c.strokeStyle='#ffffff0c';c.lineWidth=1;const gs=64;for(let x=-((ax%gs)+gs)%gs;x<LW;x+=gs){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,LH);c.stroke()}for(let y=-((ay%gs)+gs)%gs;y<LH;y+=gs){c.beginPath();c.moveTo(0,y+.5);c.lineTo(LW,y+.5);c.stroke()}
+    if(this.src.layers.length){const x0=Math.floor(ax/256),x1=Math.floor((ax+LW)/256),y0=Math.floor(ay/256),y1=Math.floor((ay+LH)/256);
+      for(let li=0;li<this.src.layers.length;li++)for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const dx=tx*256-ax,dy=ty*256-ay;const tl=this.tile_(li,z,tx,ty);
+        if(tl&&tl.ok){c.drawImage(tl.img,dx,dy,256,256);continue}
         for(let k=1;k<=4;k++){const pz=z-k;if(pz<0)break;const f=2**k;const px=Math.floor(tx/f),py=Math.floor(ty/f);const n=2**pz;const kk=li+'/'+pz+'/'+(((px%n)+n)%n)+'/'+py;const pt=this.tiles.get(kk);
           if(pt&&pt.ok){const sz=pt.img.naturalWidth/f;c.drawImage(pt.img,(tx-px*f)*sz,(ty-py*f)*sz,sz,sz,dx,dy,256,256);break}}}}
-    const G=L.G;
-    if(G){
-      const X=i=>G.wx[i]*s-left,Y=i=>G.wy[i]*s-top;
-      // draw only the parts of the track that are on screen (long trips can hold 100,000+ points)
-      if(!G.boxes){const bx=[];for(let i=0;i<G.n;i+=256){let x0=1,x1=0,y0=1,y1=0;const e=Math.min(G.n,i+257);for(let j=i;j<e;j++){const x=G.wx[j],y=G.wy[j];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}bx.push([x0,x1,y0,y1])}G.boxes=bx}
-      const m=24/s,vx0=left/s-m,vx1=(left+W)/s+m,vy0=top/s-m,vy1=(top+H)/s+m;
-      const path=(a,b)=>{c.beginPath();for(let k=a>>8;k<=b>>8;k++){const q=G.boxes[k];if(!q||q[1]<vx0||q[0]>vx1||q[3]<vy0||q[2]>vy1)continue;
-        let pen=false;for(let i=Math.max(a,k<<8),e=Math.min(b,(k<<8)+256);i<=e;i++){const x=X(i),y=Y(i);if(!pen||G.t[i]-G.t[i-1]>30000||G.brk[i]){c.moveTo(x,y);pen=true}else c.lineTo(x,y)}}};
-      c.lineJoin='round';c.lineCap='round';
-      path(0,G.n-1);c.strokeStyle='#35c3d655';c.lineWidth=3;c.stroke();
-      const si=inSpan(S.T);if(si>=0){const sp=L.spans[si];const a=Math.max(0,bsearch(G.t,sp.s,G.n)),b=Math.max(a,bsearch(G.t,sp.e,G.n));
-        path(a,b);c.strokeStyle='#0008';c.lineWidth=6;c.stroke();c.strokeStyle='#35c3d6';c.lineWidth=3.5;c.stroke();
-        if(g){const cur=Math.max(a,Math.min(b,bsearch(G.t,S.T,G.n)));path(a,cur);c.strokeStyle='#f2f2f2';c.lineWidth=3.5;c.stroke()}}
-      if(EX.inT!=null&&EX.outT!=null){const [ra,rb]=evdRange(),a=Math.max(0,bsearch(G.t,ra,G.n)),b=Math.max(a,bsearch(G.t,rb,G.n));if(b>a){path(a,b);c.strokeStyle='#000a';c.lineWidth=8;c.stroke();c.strokeStyle='#ffb020';c.lineWidth=4.5;c.stroke()}}
-      PINS.list.forEach((p,i)=>{const q=interpG(L.G,p.t);if(!q)return;const x=q.wx*s-left,y=q.wy*s-top;if(x<-20||y<-20||x>W+20||y>H+20)return;pinTag(c,i+1,x,y,18)});
-      if(g){const x=g.wx*s-left,y=g.wy*s-top;c.save();c.translate(x,y);c.rotate(g.trk*Math.PI/180);
+    if(G){const path=this.pather(G,s,ax,ay,LW,LH);
+      c.lineJoin=t.lineJoin='round';c.lineCap=t.lineCap='round';
+      path(c,0,G.n-1);c.strokeStyle='#35c3d655';c.lineWidth=3;c.stroke();
+      if(si>=0){const sp=L.spans[si];const a=Math.max(0,bsearch(G.t,sp.s,G.n)),b=Math.max(a,bsearch(G.t,sp.e,G.n));path(c,a,b);c.strokeStyle='#0008';c.lineWidth=6;c.stroke();c.strokeStyle='#35c3d6';c.lineWidth=3.5;c.stroke()}
+      if(EX.inT!=null&&EX.outT!=null){const [ra,rb]=evdRange(),a=Math.max(0,bsearch(G.t,ra,G.n)),b=Math.max(a,bsearch(G.t,rb,G.n));if(b>a){path(t,a,b);t.strokeStyle='#000a';t.lineWidth=8;t.stroke();t.strokeStyle='#ffb020';t.lineWidth=4.5;t.stroke()}}
+      PINS.list.forEach((p,i)=>{const q=interpG(G,p.t);if(!q)return;pinTag(t,i+1,q.wx*s-ax,q.wy*s-ay,18)})}
+    return this.ly={key,ax,ay,base:bcv,top:tcv}}
+  // a path through the track, only where it is on the layer, and without points that are less than 1 px apart
+  pather(G,s,ox,oy,LW,LH){
+    if(!G.boxes){const bx=[];for(let i=0;i<G.n;i+=256){let x0=1,x1=0,y0=1,y1=0;const e=Math.min(G.n,i+257);for(let j=i;j<e;j++){const x=G.wx[j],y=G.wy[j];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}bx.push([x0,x1,y0,y1])}G.boxes=bx}
+    const m=24/s,vx0=ox/s-m,vx1=(ox+LW)/s+m,vy0=oy/s-m,vy1=(oy+LH)/s+m;
+    return (c,a,b)=>{c.beginPath();let lx=1e9,ly=1e9;for(let k=a>>8;k<=b>>8;k++){const q=G.boxes[k];if(!q||q[1]<vx0||q[0]>vx1||q[3]<vy0||q[2]>vy1)continue;
+      let pen=false;for(let i=Math.max(a,k<<8),e=Math.min(b,(k<<8)+256);i<=e;i++){const x=G.wx[i]*s-ox,y=G.wy[i]*s-oy;
+        if(!pen||G.t[i]-G.t[i-1]>30000||G.brk[i]){c.moveTo(x,y);pen=true;lx=x;ly=y}else if(i===e||Math.abs(x-lx)>=1||Math.abs(y-ly)>=1){c.lineTo(x,y);lx=x;ly=y}}}}}
+  draw(g){
+    const c=this.ctx,W=this.w,H=this.h,z=this.z,s=256*2**z;c.setTransform(this.dpr,0,0,this.dpr,0,0);
+    const left=this.cx*s-W/2,top=this.cy*s-H/2;const ly=this.layers(left,top),G=L.G;
+    c.setTransform(1,0,0,1,0,0);const ox=Math.round((ly.ax-left)*this.dpr),oy=Math.round((ly.ay-top)*this.dpr);
+    c.drawImage(ly.base,ox,oy);c.setTransform(this.dpr,0,0,this.dpr,0,0);
+    if(G&&g){const si=inSpan(S.T);if(si>=0){const sp=L.spans[si];const a=Math.max(0,bsearch(G.t,sp.s,G.n)),b=Math.max(a,bsearch(G.t,sp.e,G.n));
+      const cur=Math.max(a,Math.min(b,bsearch(G.t,S.T,G.n)));const path=this.pather(G,s,left,top,W,H);c.lineJoin='round';c.lineCap='round';path(c,a,cur);c.strokeStyle='#f2f2f2';c.lineWidth=3.5;c.stroke()}}
+    c.setTransform(1,0,0,1,0,0);c.drawImage(ly.top,ox,oy);c.setTransform(this.dpr,0,0,this.dpr,0,0);
+    if(G&&g){const x=g.wx*s-left,y=g.wy*s-top;c.save();c.translate(x,y);c.rotate(g.trk*Math.PI/180);
         c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.fillStyle='#ffffff2e';c.fill();
         c.beginPath();c.moveTo(0,-11);c.lineTo(7.5,8);c.lineTo(0,4);c.lineTo(-7.5,8);c.closePath();c.fillStyle='#f2f2f2';c.strokeStyle='#000';c.lineWidth=1.5;c.fill();c.stroke();c.restore()}
-    }
     c.font='12px "IBM Plex Sans",system-ui';c.textAlign='center';
     if(!G){c.fillStyle='#b4b4b4';c.fillText(L.segs.length?(L.tele.files||L.tele.blocks?'No GPS data decoded (see Settings → Diagnostics)':'Reading GPS…'):'Map',W/2,H/2)}
     else if(!g){c.fillStyle='#000a';c.fillRect(W/2-64,40,128,22);c.fillStyle='#b4b4b4';c.fillText('No GPS fix here',W/2,55)}
@@ -2448,29 +2467,33 @@ function drawTL(){
   // event marks: a filled triangle for an event recording, an outlined one for a firm or hard moment
   for(const ev of evList()){const x=X(t2c(ev.t));if(x<-8||x>W+8)continue;c.beginPath();c.moveTo(x-6,top+1);c.lineTo(x+6,top+1);c.lineTo(x,top+11);c.closePath();
     c.lineWidth=1.5;if(ev.clip){c.fillStyle='#f0786a';c.fill();c.strokeStyle='#141414';c.stroke()}else{c.fillStyle='#141414';c.fill();c.strokeStyle='#ff5d5d';c.stroke()}}
-  drawOv();laneVals();
+  drawOv(true);laneVals();
   {const g=$('#tlLab');g.innerHTML=L.keys.map((k,r)=>`<span style="top:${rowsY+r*rowH-0.5}px;height:${rowH}px" title="${chLabel(k).replace(/"/g,'')}">${k}</span>`).join('')}
 }
 /* whole-drive overview (DaVinci Resolve's upper timeline): every drive, events, pins, gaps and the part the timeline shows */
 const OV={};
-function drawOv(){const cv=$('#ovc');if(!cv)return;const r=cv.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);if(cv.width!==Math.round(r.width*dpr)){cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr)}
-  const c=cv.getContext('2d'),W=r.width,H=r.height;c.setTransform(dpr,0,0,dpr,0,0);c.fillStyle='#141414';c.fillRect(0,0,W,H);if(!L.spans.length||!L.cTot)return;
+function drawOv(full){const cv=$('#ovc');if(!cv)return;const W=cv.clientWidth,H=cv.clientHeight,dpr=Math.min(2,devicePixelRatio||1);if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);full=true}
+  const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);if(!L.spans.length||!L.cTot){c.fillStyle='#141414';c.fillRect(0,0,cv.width,cv.height);return}
   const X=cv0=>cv0/L.cTot*(W-2)+1;OV.X=X;OV.W=W;
+  if(full||!OV.bg||OV.bg.width!==cv.width||OV.bg.height!==cv.height){const bg=OV.bg&&OV.bg.width===cv.width&&OV.bg.height===cv.height?OV.bg:document.createElement('canvas');bg.width=cv.width;bg.height=cv.height;OV.bg=bg;drawOvBg(bg.getContext('2d'),X,W,H,dpr)}
+  c.drawImage(OV.bg,0,0);c.setTransform(dpr,0,0,dpr,0,0);
+  const a=X(Math.max(0,TL.view.c0)),b=X(Math.min(L.cTot,TL.view.c1));c.fillStyle='#ffffff14';c.fillRect(a,1,Math.max(2,b-a),H-2);c.strokeStyle='#ededed';c.lineWidth=1;c.strokeRect(Math.round(a)+.5,1.5,Math.max(2,Math.round(b-a)-1),H-3);
+  c.fillStyle='#ffb020';c.fillRect(Math.round(X(t2c(S.T))),0,1.5,H)}
+function drawOvBg(c,X,W,H,dpr){c.setTransform(dpr,0,0,dpr,0,0);c.fillStyle='#141414';c.fillRect(0,0,W,H);
   for(const sp of L.spans){c.fillStyle='#2c3a52';c.fillRect(X(sp.c0),6,Math.max(1,X(sp.c0+sp.e-sp.s)-X(sp.c0)),8)}
   for(const ch of L.chans.values())for(const sg of ch.segs)if(sg.cat!=='normal'){c.fillStyle=sg.cat==='event'?'#f0786a':'#c2b48f';c.fillRect(X(t2c(sg.start)),6,Math.max(1,X(t2c(sg.end))-X(t2c(sg.start))),8)}
   for(const ev of evList()){const x=X(t2c(ev.t));c.fillStyle=ev.clip?'#f0786a':'#ff5d5d';c.beginPath();c.moveTo(x-4,0);c.lineTo(x+4,0);c.lineTo(x,6);c.fill()}
-  for(const p of PINS.list){const x=X(t2c(p.t));c.fillStyle='#ededed';c.beginPath();c.arc(x,17,2.5,0,Math.PI*2);c.fill()}
-  const a=X(Math.max(0,TL.view.c0)),b=X(Math.min(L.cTot,TL.view.c1));c.fillStyle='#ffffff14';c.fillRect(a,1,Math.max(2,b-a),H-2);c.strokeStyle='#ededed';c.lineWidth=1;c.strokeRect(Math.round(a)+.5,1.5,Math.max(2,Math.round(b-a)-1),H-3);
-  c.fillStyle='#ffb020';c.fillRect(Math.round(X(t2c(S.T))),0,1.5,H)}
+  for(const p of PINS.list){const x=X(t2c(p.t));c.fillStyle='#ededed';c.beginPath();c.arc(x,17,2.5,0,Math.PI*2);c.fill()}}
 function bindOv(){const o=$('#ovw');const go=e=>{const r=o.getBoundingClientRect();const cc=clamp((e.clientX-r.left-1)/(r.width-2),0,1)*L.cTot,len=TL.view.c1-TL.view.c0;TL.user=true;TL.view.c0=cc-len/2;TL.view.c1=TL.view.c0+len;clampView();TL.dirty=true};
-  o.addEventListener('pointerdown',e=>{if(!L.spans.length)return;o.setPointerCapture(e.pointerId);go(e);o._d=true});o.addEventListener('pointermove',e=>{if(o._d)go(e)});o.addEventListener('pointerup',()=>o._d=false);
+  o.addEventListener('pointerdown',e=>{if(!L.spans.length)return;o.setPointerCapture(e.pointerId);go(e);o._d=true});o.addEventListener('pointermove',e=>{if(o._d)go(e)});o.addEventListener('pointerup',()=>o._d=false);o.addEventListener('pointercancel',()=>o._d=false);
   document.querySelector('.zpre').addEventListener('click',e=>{const b=e.target.closest('[data-z]');if(!b||!L.spans.length)return;zoomPreset(b.dataset.z)})}
 function zoomPreset(z){TL.user=true;if(z==='drive'){const i=Math.max(0,spanIdx(S.T)),sp=L.spans[i],len=sp.e-sp.s,pad=len*0.02+500;TL.view={c0:sp.c0-pad,c1:sp.c0+len+pad}}
   else{const ms=+z,cc=t2c(S.T);TL.view={c0:cc-ms/2,c1:cc+ms/2}}clampView();TL.dirty=true;for(const b of document.querySelectorAll('.zpre .btn'))b.classList.toggle('on',b.dataset.z===z)}
 /* values beside the speed and G-force lanes, at the pointer or the playhead (Strava) */
 function laneVals(){const sv=$('#lvS'),gv=$('#lvG');if(!sv||!TL.lab){return}const t=TL.hoverT!=null?TL.hoverT:S.T;
-  if(TL.lab.s){const g=TL.hoverT!=null?interpG(L.G,t):gpsAt(t);sv.textContent=g?fSpd(g.spd):'No GPS here';sv.style.left=TL.lab.s.x+'px';sv.style.top=TL.lab.s.y+'px';sv.hidden=false}else sv.hidden=true;
-  if(TL.lab.g){const a=accAt(t);gv.textContent=a?`${a.ev.toFixed(2)} g`:'No reading';gv.style.left=TL.lab.g.x+'px';gv.style.top=TL.lab.g.y+'px';gv.hidden=false}else gv.hidden=true}
+  if(TL.lab.s){const g=TL.hoverT!=null?interpG(L.G,t):gpsAt(t);setEl(sv,g?fSpd(g.spd):'No GPS here',TL.lab.s)}else sv.hidden=true;
+  if(TL.lab.g){const a=accAt(t);setEl(gv,a?`${a.ev.toFixed(2)} g`:'No reading',TL.lab.g)}else gv.hidden=true}
+function setEl(e,t,q){const k=t+'|'+q.x+'|'+q.y;if(e._k===k&&!e.hidden)return;e._k=k;e.textContent=t;e.style.left=q.x+'px';e.style.top=q.y+'px';e.hidden=false}
 /* what happened inside a time range: top speed, peak G-force and the speed change (shown in the clip-range chip and the summary) */
 function rangeStats(a,b){const o={};const G=L.G,A=L.A;
   if(G){const i0=Math.max(0,bsearch(G.t,a,G.n)),i1=bsearch(G.t,b,G.n);let mx=-1;for(let i=i0;i<=i1&&i>=0;i++)if(G.t[i]>=a&&G.spd[i]>mx)mx=G.spd[i];if(mx>=0)o.vmax=mx;const s0=gpsAt(a),s1=gpsAt(b);if(s0&&s1){o.v0=s0.spd;o.v1=s1.spd}}
