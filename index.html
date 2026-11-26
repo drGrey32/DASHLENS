@@ -308,7 +308,6 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 .hide{display:none!important}
 .hg{display:flex;flex-direction:column;line-height:1.15;min-width:12.5em;padding-left:20px;border-left:1px solid var(--line2)}
 .hg small{color:var(--muted);font-size:var(--fs-support)}.hg span{font-weight:600;white-space:nowrap}.hg span i{font-style:normal;font-weight:400;color:var(--text2)}
-.mh3{font-size:var(--fs-body);margin:16px 0 6px}
 #incCard{position:absolute;left:0;right:0;top:0;z-index:4;background:var(--panel);border:1px solid var(--line);border-radius:var(--r3);padding:12px 16px}
 #incCard .ih{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:var(--fs-support)}#incCard .ih span{flex:1}
 #incCard h3{margin:6px 0 2px;font-size:var(--fs-section);font-weight:600}
@@ -328,6 +327,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 #msgBox .ma{display:flex;gap:8px;margin-top:12px}#msgBox .ma:empty{display:none}
 #sumCard{position:absolute;left:50%;top:16px;transform:translateX(-50%);z-index:1004;width:min(480px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line2);border-radius:var(--r3);padding:12px 12px 12px 16px;box-shadow:var(--sh2)}
 #sumCard[hidden]{display:none}
+#allHid{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);margin:0;color:var(--muted);font-size:var(--fs-body)}#allHid[hidden]{display:none}
 #sumCard .sh{display:flex;align-items:center;gap:8px}#sumCard .sh b{flex:1;font-size:var(--fs-section)}
 #sumCard ul{margin:8px 0 0;padding:0;list-style:none;line-height:1.6}
 #sumCard li{display:flex;gap:8px;align-items:baseline}#sumCard li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--muted);transform:translateY(-1px)}
@@ -373,13 +373,11 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 @container app (max-width:1365px){ .zpre [data-z="600000"],.zpre [data-z="10000"]{display:none} }
 @container app (max-width:1000px){ .brand{display:none!important} }
 @container app (max-width:1679px){ .hg{display:none!important} }
-@container app (max-width:1499px){ #layoutSel{display:none!important} }
 @container app (max-width:760px){ .hcl small,.hhead{display:none!important} }
 /* narrow windows and 200 % zoom: the top bar wraps instead of hiding controls */
 @container app (max-width:980px){
   #top{display:flex;flex-wrap:wrap;row-gap:6px;column-gap:8px}
   #top .grp{overflow:visible;flex-wrap:wrap}#top .grp.right{margin-left:auto}
-  #layoutSel{display:none!important}
   .lg{display:none}
 }
 @container app (min-width:981px){ .sm{display:none} }
@@ -403,7 +401,6 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
     <div class="grp right">
       <button class="btn" id="bEvd" title="Save a clip, the original files and an incident summary"><span class="lg">Save evidence</span><span class="sm">Evidence</span></button>
       <div id="prog" role="button" tabindex="0" title="Show loading details"><span class="spin" style="width:11px;height:11px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--text);animation:spin .8s linear infinite"></span><span id="progT"></span><div class="bar"><i id="progB"></i></div></div>
-      <div class="seg" id="layoutSel" role="radiogroup" aria-label="Layout presets"></div>
       <button class="btn" id="bTiles" aria-haspopup="true" aria-expanded="false" title="Edit the layout: presets, which views show, undo and reset"><span class="lg">Edit layout</span><span class="sm">Layout</span></button>
       <button class="btn ib" id="bSet" title="Settings & diagnostics"></button>
       <button class="btn ib" id="bHelp" title="Keyboard shortcuts (?)"></button>
@@ -414,6 +411,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
     <div id="vids"></div>
     <div id="side"><section id="incCard" aria-label="Strongest moment" hidden></section></div>
     <div id="splits"></div>
+    <p id="allHid" hidden>All views are hidden. Open <b>Edit layout</b> to show them again.</p>
     <div id="tips" role="dialog" aria-label="Quick tips"><h4>Quick tips</h4><ul>
       <li><b>Drag the timeline</b> to move through every camera at once. <b>Ctrl + wheel</b> zooms it.</li>
       <li><b>Space</b> plays and pauses; <b>← →</b> step one frame; <b>E</b> goes to the next event.</li>
@@ -429,7 +427,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
     <div id="empty"><div class="card">
       <h1>Open your dashcam footage</h1>
       <p>Choose your dashcam's SD card, or a folder you copied from it. All subfolders (Normal, Event, Parking…) are included.</p>
-      <div class="row"><button class="btn primary" id="bOpen2"></button><button class="btn" id="bAdd2">Open files…</button></div>
+      <div class="row"><button class="btn primary" id="bOpen2"></button><button class="btn" id="bAdd2">Open files</button></div>
       <p>…or drop the folder anywhere on this window.</p>
       <div class="fine">Works with most dashcams (Vantrue, Viofo, BlackVue, Thinkware, Nextbase, 70mai, Garmin, Rexing, Tesla TeslaCam and others), from single-channel up to 4-channel. Clips are put in order by the date and time in their names; front, rear and cabin cameras are matched automatically. GPS and G-sensor data are shown when the camera recorded them.<br>Use Chrome or Edge (needed for H.265 footage).</div>
     </div></div>
@@ -441,9 +439,9 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
       <div id="legend" aria-label="Timeline key"><span data-k="normal"><i class="sw sw-drive"></i>Driving</span><span data-k="parking"><i class="sw sw-park"></i>Parking</span><span data-k="event"><i class="sw sw-event"></i>Event</span><span data-k="mark"><i class="evmark"></i>Firm or hard moment</span><span data-k="speed"><i class="sw sw-speed"></i>Speed</span><span data-k="gap"><i class="sw hatch"></i>No recording</span><span id="pinKey" hidden><i class="pinmark" aria-hidden="true">1</i>Your pins (numbered)</span></div></div>
     <div id="ctrl" role="toolbar" aria-label="Playback">
       <button class="btn ib" id="bPrevF" title="Previous clip (PgUp)"></button>
-      <button class="btn ib big" id="bBack" title="Back 10 seconds"></button>
+      <button class="btn ib big" id="bBack" title="Back 10 seconds (Shift + ←)"></button>
       <button class="btn ib" id="bPlay" title="Play / pause (Space)"></button>
-      <button class="btn ib big" id="bFwd" title="Forward 10 seconds"></button>
+      <button class="btn ib big" id="bFwd" title="Forward 10 seconds (Shift + →)"></button>
       <button class="btn ib" id="bNextF" title="Next clip (PgDn)"></button>
       <div class="vsep"></div>
       <div class="evnav" id="evNav"><button class="btn tx" id="bPrevE" title="Previous event (Shift+E)"></button><button class="btn tx" id="bEvents" title="List of events"></button><button class="btn tx" id="bNextE" title="Next event (E)"></button><button class="btn tx" id="bPin" title="Pin this moment (P)">Pin</button></div>
@@ -455,7 +453,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
       <select class="btn" id="audSel" title="Audio comes from this camera" aria-label="Audio comes from this camera"></select>
       <div id="tInfo"></div>
       <div class="grow"></div>
-      <button class="btn" id="bSkip" title="Jump over gaps between drives while playing" aria-pressed="true">Skip gaps</button>
+      <button class="btn" id="bSkip" title="Jump over the time with no recording while playing" aria-pressed="true">Skip gaps</button>
       <button class="btn ib" id="bZo" title="Zoom the timeline out (−, or Ctrl + wheel)"></button>
       <div class="zpre" role="group" aria-label="Zoom presets"><button class="btn" id="bZfit" title="Show all the footage (Shift + Z)">All</button><button class="btn" data-z="drive" title="Show the whole drive">Drive</button><button class="btn" data-z="600000" title="Show 10 minutes around the playhead">10 min</button><button class="btn" data-z="60000" title="Show 1 minute around the playhead">1 min</button><button class="btn" data-z="10000" title="Show 10 seconds around the playhead">10 s</button></div>
       <button class="btn ib" id="bZi" title="Zoom the timeline in (=, or Ctrl + wheel)"></button>
@@ -477,7 +475,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 
   <section class="sec">
     <h3>Playback &amp; timeline</h3>
-    <div class="srow"><div class="sl"><b>Shorten gaps</b><small>Squeeze long breaks between drives on the timeline.</small></div><input type="checkbox" class="sw" id="sComp"></div>
+    <div class="srow"><div class="sl"><b>Draw gaps short on the timeline</b><small>Long times with no recording take less room. Playback is not changed (for that, use Skip gaps).</small></div><input type="checkbox" class="sw" id="sComp"></div>
     <div class="srow"><div class="sl"><b>Correct clip times with GPS</b><small>Fix clips whose file name has the wrong time.</small></div><input type="checkbox" class="sw" id="sRetime"></div>
     <div class="srow col"><div class="sl"><b>Show recordings</b><small>Choose which types appear on the timeline.</small></div>
       <div class="chips"><label class="chip" title="Regular recording while driving"><input type="checkbox" id="sCatN"><i class="sw sw-drive"></i>Driving</label><label class="chip" title="Saved after a bump, or when the lock button was pressed"><input type="checkbox" id="sCatE"><i class="sw sw-event"></i>Event</label><label class="chip" title="Recorded while parked"><input type="checkbox" id="sCatP"><i class="sw sw-park"></i>Parking</label></div><small class="why" id="catWhy" hidden>The last type that is on can't be turned off: the timeline needs at least one.</small></div>
@@ -485,7 +483,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 
   <section class="sec">
     <h3>Speed &amp; map</h3>
-    <div class="srow"><div class="sl"><b>Speed units</b></div><div class="segsel" data-for="sUnits"><button data-v="kmh">km/h</button><button data-v="mph">mph</button></div></div>
+    <div class="srow"><div class="sl"><b>Show speed in</b></div><div class="segsel" data-for="sUnits"><button data-v="kmh">km/h</button><button data-v="mph">mph</button></div></div>
     <div class="srow"><div class="sl"><b>Map style</b></div><select id="sMap" class="ssel" aria-label="Map style"></select></div>
   </section>
 
@@ -507,7 +505,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
 
   <details class="sec adv">
     <summary><h3>Advanced</h3><span>Only change these if something looks wrong</span></summary>
-    <div class="srow"><div class="sl"><b>Recorded speed unit</b><small>The unit your camera saves speed in.</small></div><select id="sSpdU" class="ssel"><option value="auto">Automatic</option><option value="kn">Knots</option><option value="kmh">km/h</option><option value="ms">m/s</option><option value="mph">mph</option></select></div>
+    <div class="srow"><div class="sl"><b>Speed unit in the camera files</b><small>Change this only if the speed looks wrong. Automatic is right for most cameras.</small></div><select id="sSpdU" class="ssel"><option value="auto">Automatic</option><option value="kn">Knots</option><option value="kmh">km/h</option><option value="ms">m/s</option><option value="mph">mph</option></select></div>
     <div class="srow"><div class="sl"><b>Forward direction</b><small>Sensor axis pointing to the front of the car.</small></div><select id="sGf" class="ssel axsel"></select></div>
     <div class="srow"><div class="sl"><b>Right-hand direction</b><small>Sensor axis pointing to the car's right.</small></div><select id="sGr" class="ssel axsel"></select></div>
   </details>
@@ -529,13 +527,15 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
   <section id="pinSec"><h3>Your pins</h3><p class="sdesc">Mark moments with P or the Pin button. Each pin can have a note. Pins go into the incident summary, and they are kept for the next time you open this footage.</p><ol id="pinRows"></ol></section>
 </aside>
 <div class="modal" id="evdModal" role="dialog" aria-modal="true" aria-labelledby="evdH"><div class="box" style="width:min(480px,100vw - 32px)">
-  <h2 id="evdH">Save evidence</h2>
+  <h2 id="evdH" tabindex="-1">Save evidence</h2>
   <p class="note">Your original files are never changed. Each export is a new file.</p>
   <section class="esec"><h3>Evidence package</h3>
     <p class="note">All cameras that are shown now, side by side, in one video file. The export plays the part once at normal speed, so a 30-second clip takes about 30 seconds. The exported file has no sound.</p>
     <div class="erow"><span class="el">Start</span><b id="evdIn" class="ev">—</b><button class="btn" id="bSetIn">Set to the playhead (I)</button></div>
     <div class="erow"><span class="el">End</span><b id="evdOut" class="ev">—</b><button class="btn" id="bSetOut">Set to the playhead (O)</button></div>
     <div class="erow"><span class="el">Length</span><b id="evdLen" class="ev">—</b></div>
+    <p class="note" id="evdAuto"></p>
+    <div class="erow"><button class="btn" id="bEvdStrong">Use the strongest moment</button><button class="btn" id="bEvdClear">Clear the clip range</button></div>
     <label class="erow chk"><input type="checkbox" id="evdOver"> Show the date, time, speed and G-force on the video</label>
     <fieldset class="efs"><legend>Also save</legend>
       <label class="chk"><input type="checkbox" id="evdSum" checked> Incident summary page (print it or save it as a PDF)</label>
@@ -550,9 +550,9 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
     <div class="mfoot"><button class="btn" id="bEvdCancel" hidden>Cancel</button><button class="btn primary" id="bEvdGo">Save evidence</button></div>
   </section>
   <section class="esec"><h3>Only a summary page</h3>
-    <p class="note">The summary page alone, for the moment at the playhead, opened in a new tab.</p>
+    <p class="note">The summary page alone, opened in a new tab. It shows the same moment as the summary in the evidence package: the strongest event in the clip range, or the middle of the range.</p>
     <p class="why" id="sumWhy" hidden></p>
-    <div class="mfoot"><button class="btn primary" id="bSumGo">Make the summary page</button></div>
+    <div class="mfoot"><button class="btn" id="bSumGo">Make the summary page</button></div>
   </section>
   <section class="esec"><h3>Only the telemetry</h3>
     <p class="note" id="csvNote">Speed, position, heading and G-force as the camera recorded them, one row for each reading, as a CSV file for a spreadsheet. Only the clip range is saved when one is set, otherwise the whole drive.</p>
@@ -586,7 +586,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
     <kbd>M</kbd><span>Mute</span>
     <h3>Navigation</h3>
     <kbd>← →</kbd><span>One frame back / forward (also , and .)</span>
-    <kbd>Shift + ← →</kbd><span>5 seconds back / forward</span>
+    <kbd>Shift + ← →</kbd><span>10 seconds back / forward (the same as the ↺ 10 and ↻ 10 buttons)</span>
     <kbd>PgUp  PgDn</kbd><span>Previous / next clip</span>
     <kbd>Home  End</kbd><span>Start / end of the current drive</span>
     <kbd>=  −</kbd><span>Zoom the timeline in / out (Shift + Z: show all)</span>
@@ -597,7 +597,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
     <kbd>P</kbd><span>Pin this moment. Numbered pins show on the timeline, on the map and in the events list</span>
     <kbd>S</kbd><span>Snapshot of the main camera</span>
     <h3>View</h3>
-    <kbd>1 – 4</kbd><span>Make that camera the main camera (press again, or 0, for all equal)</span>
+    <kbd>1 – 9</kbd><span>Make that camera the main camera (press again, or 0, for all equal)</span>
     <kbd>Ctrl + Z</kbd><span>Undo the last layout change</span>
     <kbd>F</kbd><span>Fullscreen</span>
     <kbd>C</kbd><span>Follow the car on the map again</span>
@@ -608,7 +608,7 @@ pre#diag{background:#121212;border:1px solid var(--line);border-radius:var(--r3)
   <p class="note" id="keyNone" hidden>No shortcut matches. Try another word.</p>
   <h2 style="margin-top:18px">Tips</h2>
   <p class="note">• <b>Resize:</b> drag the thin dividers between cameras, between the videos and the map column, and between the map and G-sensor. Double-click a divider to reset it.<br>
-  • <b>Rearrange:</b> drag a camera's label onto another camera to swap them. Double-click a camera (or press 1–4) to set the main camera.<br>
+  • <b>Rearrange:</b> drag a camera's label onto another camera to swap them. Double-click a camera (or press 1–9) to set the main camera.<br>
   • <b>Timeline:</b> drag to move through time. Ctrl + wheel (or the − and + buttons) zooms; the wheel alone scrolls. Each row is one camera: solid bars are driving, diagonal stripes are parking, vertical bars are event recordings. A filled triangle marks an event recording, an outlined triangle a firm or hard moment (0.3 g or more). The teal area is speed.<br>
   • <b>G-sensor:</b> the dot behaves like a ball in a bowl, showing the force you feel: braking throws it up (forward), accelerating pushes it down (back), and a left turn throws it right. The two strips show the last and next 10 seconds.<br>
   • <b>Map:</b> wheel to zoom, drag to pan, click on the route to jump to that moment.<br>
@@ -632,7 +632,7 @@ const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const pad=(n,w=2)=>String(n).padStart(w,'0');
 const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
-const store={get(k,d){try{const v=localStorage.getItem('dashlens.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('dashlens.'+k,JSON.stringify(v))}catch(e){}}};
+const store={get(k,d){try{const v=localStorage.getItem('dashlens.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('dashlens.'+k,JSON.stringify(v))}catch(e){if(!store.warned&&e&&e.name==='QuotaExceededError'){store.warned=true;setTimeout(()=>toast('This browser has no room to save your pins and position. Use Settings, Privacy, Forget to make room.'),0)}}}};
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // All clip times are "floating" local camera time stored as Date.UTC(...) values and printed with UTC getters.
 const fDate=t=>{const d=new Date(t);return `${DOW[d.getUTCDay()]} ${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`};
@@ -642,6 +642,7 @@ const fDur=ms=>{let s=Math.max(0,Math.floor(ms/1000));const h=Math.floor(s/3600)
 const fGap=ms=>{const m=Math.round(ms/60000);if(m<1)return Math.round(ms/1000)+'s';if(m<60)return m+'m';const h=Math.floor(m/60);if(h<48)return h+'h'+(m%60?' '+(m%60)+'m':'');return Math.round(h/24)+'d'};
 function bsearch(a,x,n){let lo=0,hi=(n==null?a.length:n)-1,r=-1;while(lo<=hi){const m=(lo+hi)>>1;if(a[m]<=x){r=m;lo=m+1}else hi=m-1}return r}
 // toasts confirm the success of an action only (errors stay on the screen); 6 s, paused while pointed at or focused
+function escHtml(x){return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 let toastT;const TOAST_MS=6000;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),TOAST_MS)}
 function toastHold(on){const t=$('#toast');if(!t.classList.contains('show'))return;clearTimeout(toastT);if(!on)toastT=setTimeout(()=>t.classList.remove('show'),TOAST_MS)}
 async function pool(items,n,fn){let i=0;const w=[];for(let k=0;k<Math.min(n,items.length);k++)w.push((async()=>{while(i<items.length){const j=i++;try{await fn(items[j],j)}catch(e){console.warn(e)}}})());await Promise.all(w)}
@@ -709,7 +710,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${c.labe
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.6.7';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.6.8';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -1673,6 +1674,10 @@ function evList(){
     const gp=L.G&&interpG(L.G,x.g?x.g.at:x.t);x.spd=gp?gp.spd:null;x.jump=Math.max(x.clip?x.s:-Infinity,x.t-5000,L.tMin)}
   EVC={key,list:out};return out}
 // the event the owner most likely came for: the hardest one, then the first event recording
+// go to a moment: the video keeps playing or stays paused, and the timeline scrolls only when the moment is out of view
+function goToMoment(t,at=0.15){seekTo(t);const len=TL.view.c1-TL.view.c0,x=c2x(t2c(t));if(x<0||x>TL.w){TL.view.c0=t2c(t)-len*at;TL.view.c1=TL.view.c0+len;clampView()}TL.dirty=true}
+// the clip range 10 s before and after the strongest moment
+function useStrongest(){const x=strongest();if(!x)return;const m=x.g?x.g.at:x.t;EX.inT=m-10000;EX.outT=m+10000;syncEvd();toast(`Clip range set: ${fTime(EX.inT)} to ${fTime(EX.outT)}`)}
 function strongest(){const ev=evList();let b=null;for(const x of ev){const g=x.g?x.g.g:0,bg=b&&b.g?b.g.g:0;if(!b||g>bg+0.02||(Math.abs(g-bg)<=0.02&&x.clip&&!b.clip))b=x}return b}
 function renderInc(){const c=$('#incCard'),x=strongest(),ev=evList();
   if(!x||S.incHidden||!L.segs.length){if(!c.hidden){c.hidden=true;applyLayout()}return}
@@ -1687,8 +1692,8 @@ function renderInc(){const c=$('#incCard'),x=strongest(),ev=evList();
     <div class="ia"><button class="btn light" id="bIncGo">Watch from ${fTime(x.jump)}</button><button class="btn" id="bIncRange">Use as clip range</button>${ev.length>1?`<button class="linkbtn" id="bIncAll">${plural(ev.length-1,'more event')}</button>`:''}</div>`;
   c.hidden=false;
   $('#bIncX').onclick=()=>{S.incHidden=true;renderInc()};
-  $('#bIncGo').onclick=()=>{pause();seekTo(x.jump);const len=TL.view.c1-TL.view.c0;if(c2x(t2c(x.jump))<0||c2x(t2c(x.jump))>TL.w){TL.view.c0=t2c(x.jump)-len*0.15;TL.view.c1=TL.view.c0+len;clampView()}TL.dirty=true};
-  $('#bIncRange').onclick=()=>{const m=x.g?x.g.at:x.t;EX.inT=m-10000;EX.outT=m+10000;syncEvd();toast(`Clip range set: ${fTime(EX.inT)} to ${fTime(EX.outT)}`,1800)};
+  $('#bIncGo').onclick=()=>goToMoment(x.jump);
+  $('#bIncRange').onclick=()=>useStrongest();
   const all=$('#bIncAll');if(all)all.onclick=openEvents;
   applyLayout()}
 function evTitle(x){return x.clip?'Event recording':`${gWord(x.g.g)[0].toUpperCase()+gWord(x.g.g).slice(1)} ${x.g.kind.toLowerCase()}`}
@@ -1723,14 +1728,14 @@ function addPin(){if(!L.segs.length)return;const t=S.T;if(PINS.list.some(p=>Math
   const k=mainCam(),p=P.get(k),v=p&&p.shown;let img=null;
   try{if(v&&v.readyState>=2&&v.videoWidth){const c=document.createElement('canvas'),sc=Math.min(1,960/v.videoWidth);c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);const g=c.getContext('2d'),cf=chCfg(k);
     g.translate(c.width/2,c.height/2);if(cf.flip)g.scale(1,-1);if(cf.mirror)g.scale(-1,1);g.drawImage(v,-c.width/2,-c.height/2,c.width,c.height);const im={cam:chLabel(k)};img=im;c.toBlob(b=>{im.blob=b},'image/png')}}catch(e){}   // PNG is made off the main thread and kept as a Blob
-  PINS.list.push({t,note:'',img});PINS.list.sort((a,b)=>a.t-b.t);saveResume();TL.dirty=true;renderPins();toast(`Pinned ${fTime(t)}. Add a note in the events list.`,2400)}
+  PINS.list.push({t,note:'',img});PINS.list.sort((a,b)=>a.t-b.t);saveResume();TL.dirty=true;renderPins();toast(`Pinned ${fTime(t)}. Add a note in the events list.`)}
 function pinTag(c,n,x,y,h){const t=String(n);c.font='600 12px "IBM Plex Sans",system-ui';const w=Math.max(h,Math.ceil(c.measureText(t).width)+8);
   c.beginPath();if(c.roundRect)c.roundRect(x-w/2,y-h/2,w,h,h/2);else c.rect(x-w/2,y-h/2,w,h);c.fillStyle='#ededed';c.fill();c.lineWidth=1.5;c.strokeStyle='#141414';c.stroke();
   c.fillStyle='#141414';c.textAlign='center';c.textBaseline='middle';c.fillText(t,x,y+0.5);c.textBaseline='alphabetic'}
-function renderPins(){if(MAP)MAP.dirty=true;const ol=$('#pinRows');if(!ol)return;$('#pinKey').hidden=!PINS.list.length;const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function renderPins(){if(MAP)MAP.dirty=true;const ol=$('#pinRows');if(!ol)return;$('#pinKey').hidden=!PINS.list.length;const esc=escHtml;
   ol.innerHTML=PINS.list.length?PINS.list.map((p,i)=>`<li><button class="pt" data-pi="${i}" title="Go to this pin" aria-label="Pin ${i+1}, ${fTime(p.t)}"><span class="pnum" aria-hidden="true">${i+1}</span>${fTime(p.t)}</button><input data-pn="${i}" value="${esc(p.note)}" placeholder="Note, for example: car pulls out" aria-label="Note for the pin at ${fTime(p.t)}" maxlength="200"><button class="btn ib" data-pd="${i}" aria-label="Remove the pin at ${fTime(p.t)}" title="Remove">${IC.x}</button></li>`).join('')
     :`<li class="none">No pins yet.</li>`}
-function pinsHtml(a,b){const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function pinsHtml(a,b){const esc=escHtml;
   const ps=PINS.list.filter(p=>a==null||(p.t>=a-60000&&p.t<=b+60000));if(!ps.length)return '';
   return `<h2>Pinned moments</h2><table>${ps.map(p=>{const gp=interpG(L.G,p.t);return `<tr><th>Pin ${PINS.list.indexOf(p)+1}<br>${fTime(p.t)}</th><td>${p.note?esc(p.note):'<small>No note</small>'}<br><small>${gp?fSpd(gp.spd)+' (GPS)':'No GPS speed'}${gAtWord(p.t)}</small>${p.img?`<figure style="margin-top:8px"><img src="${p.img.src}" alt="${esc(p.img.cam)} at ${fTime(p.t)}"><figcaption>${esc(p.img.cam)}, ${fTime(p.t)}</figcaption></figure>`:''}</td></tr>`}).join('')}</table>`}
 function gAtWord(t){const A=L.A;if(!A)return '';const i=bsearch(A.t,t,A.n);if(i<0||Math.abs(A.t[i]-t)>1000)return '';return `, ${A.ev[i].toFixed(2)} g`}
@@ -1749,7 +1754,7 @@ function teleCsv(a,b){const rows=new Map(),row=t=>{t=Math.round(t);let r=rows.ge
 function csvRange(){if(EX.inT!=null&&EX.outT!=null){const [a,b]=evdRange();return [a,b]}const i=Math.max(0,spanIdx(S.T)),sp=L.spans[i];return sp?[sp.s,sp.e]:[L.tMin,L.tMax]}
 function saveCsv(){if(!L.segs.length)return;const [a,b]=csvRange(),c=teleCsv(a,b);
   if(!c){showMsg('No telemetry to save','These files have no GPS or G-sensor data in this part of the footage, so there is nothing to put in the table.');return}
-  download(new Blob([c],{type:'text/csv'}),`dashlens_telemetry_${stamp(a)}.csv`);toast('Telemetry table saved to your downloads folder',2400)}
+  download(new Blob([c],{type:'text/csv'}),`dashlens_telemetry_${stamp(a)}.csv`);toast('Telemetry table saved to your downloads folder')}
 function openEvents(){renderPins();$('#bShowInc').hidden=!evList().length;$('#setPanel').classList.remove('show');renderEvents();$('#evPanel').classList.add('show');const b=$('#evRows button');(b||$('#bEvX')).focus()}
 function syncEvNav(){const n=L.segs.length?evList().length:0;$('#bEvents').innerHTML=`<span>Events${n?` (${n})`:''}</span>`;for(const id of ['#bPrevE','#bNextE'])$(id).disabled=!n}
 
@@ -1759,11 +1764,11 @@ function syncEvNav(){const n=L.segs.length?evList().length:0;$('#bEvents').inner
 const EX={inT:null,outT:null,rec:null,run:false};
 function evdRange(){let a=EX.inT,b=EX.outT;if(a==null&&b==null){a=S.T-10000;b=S.T+10000}else if(a==null)a=b-20000;else if(b==null)b=a+20000;
   if(b<a)[a,b]=[b,a];return [clampT(a),clampT(b)]}
-function syncEvd(){const [a,b]=evdRange();{const rc=$('#rangeChip'),on=EX.inT!=null||EX.outT!=null;rc.hidden=!on;if(on){$('#rangeT').textContent=`${fTime(a)} – ${fTime(b)} (${fDur(b-a)})`;const st=rangeText(a,b);$('#rangeS').textContent=st?st[0].toUpperCase()+st.slice(1)+'.':''}}if(MAP)MAP.dirty=true;$('#evdIn').textContent=`${fTime(a)}${EX.inT==null?' (auto)':''}`;$('#evdOut').textContent=`${fTime(b)}${EX.outT==null?' (auto)':''}`;$('#evdLen').textContent=fDur(b-a);
+function syncEvd(){const [a,b]=evdRange();{const rc=$('#rangeChip'),on=EX.inT!=null||EX.outT!=null;rc.hidden=!on;if(on){$('#rangeT').textContent=`${fTime(a)} – ${fTime(b)} (${fDur(b-a)})`;const st=rangeText(a,b);$('#rangeS').textContent=st?st[0].toUpperCase()+st.slice(1)+'.':''}}if(MAP)MAP.dirty=true;$('#evdIn').textContent=fTime(a);$('#evdOut').textContent=fTime(b);{const none=EX.inT==null&&EX.outT==null,x=strongest();$('#evdAuto').textContent=none?'No clip range is set, so this saves 10 seconds before and after the playhead.':EX.inT==null||EX.outT==null?'Only one end of the clip range is set, so the other end is 20 seconds away.':'';$('#evdAuto').hidden=!$('#evdAuto').textContent;$('#bEvdClear').hidden=none;$('#bEvdStrong').hidden=!x;if(x){const m=x.g?x.g.at:x.t;$('#bEvdStrong').textContent=`Use the strongest moment (${fTime(m-10000)} to ${fTime(m+10000)})`}}$('#evdLen').textContent=fDur(b-a);
   const ks=visVids().filter(k=>P.has(k)),why=!L.segs.length?'Open footage first.':!ks.length?'No camera is shown. Show at least one camera in Edit layout.':b-a<1000?'The clip must be at least 1 second long. Set a later end.':b-a>15*60000?'The clip can be at most 15 minutes long. Set a closer start or end.':'';
   if($('#evdModal').classList.contains('show')&&typeof syncEvdExtras==='function')syncEvdExtras();$('#evdWhy').textContent=why;$('#evdWhy').hidden=!why||EX.run;$('#bEvdGo').disabled=!!why||EX.run;$('#bSumGo').disabled=!L.segs.length;$('#sumWhy').hidden=!!L.segs.length;$('#sumWhy').textContent='Open footage first.';TL.dirty=true}
-function setInOut(which){if(!L.segs.length)return;if(which==='in')EX.inT=S.T;else EX.outT=S.T;if(EX.inT!=null&&EX.outT!=null&&EX.outT<EX.inT)[EX.inT,EX.outT]=[EX.outT,EX.inT];syncEvd();toast(`${which==='in'?'Start':'End'} set to ${fTime(S.T)}`,1600)}
-function openEvd(){$('#setPanel').classList.remove('show');$('#evPanel').classList.remove('show');$('#evdOver').checked=S.set.expOverlay!==false;syncEvd();syncEvdExtras();$('#evdModal').classList.add('show');$('#bEvdX').focus()}
+function setInOut(which){if(!L.segs.length)return;if(which==='in')EX.inT=S.T;else EX.outT=S.T;if(EX.inT!=null&&EX.outT!=null&&EX.outT<EX.inT)[EX.inT,EX.outT]=[EX.outT,EX.inT];syncEvd();toast(`${which==='in'?'Start':'End'} set to ${fTime(S.T)}`)}
+function openEvd(){$('#setPanel').classList.remove('show');$('#evPanel').classList.remove('show');$('#evdOver').checked=S.set.expOverlay!==false;syncEvd();syncEvdExtras();$('#evdModal').classList.add('show');$('#evdModal .box').scrollTop=0;$('#evdH').focus({preventScroll:true})}
 function exportMime(){for(const m of ['video/mp4;codecs=avc1.640028','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(m))return m;return ''}
 function stamp(t){const d=new Date(t);return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000)}
@@ -1833,9 +1838,9 @@ async function saveEvidence(){
     const csv=want.csv?teleCsv(a,b):null;let csvF=null;if(csv){const c=new Blob([csv],{type:'text/csv'});await put('telemetry.csv',c);csvF={name:'telemetry.csv',blob:c,d:'Speed, position and G-force for each reading, as the camera recorded them. Opens in a spreadsheet.'};files.push(csvF)}
     const sums=[];if(want.hash){next();const all=[{name:clipName,blob:clip.blob},...origs,...(gpx?[files.find(f=>f.name==='route.gpx')]:[]),...(csvF?[csvF]:[])];
       for(let i=0;i<all.length;i++){if(EX.cancel)throw 'cancel';step(i/all.length,`${i+1} of ${all.length}`);sums.push([await sha256(all[i].blob),fname(all[i].name)])}}
-    let sumBlob=null;if(want.sum){next();const ev=evList().filter(x=>x.t>=a&&x.t<=b).sort((x,y)=>(y.g?y.g.g:0)-(x.g?x.g.g:0))[0];const T=ev?(ev.g?ev.g.at:ev.t):Math.round((a+b)/2);
+    let sumBlob=null;if(want.sum){next();const T=summaryMoment(a,b);
       pause();seekTo(T);for(let i=0;i<60&&!allReady();i++)await sleep(50);await sleep(150);
-      const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const esc=escHtml;
       const extra=`<h2>Files in this evidence folder</h2><p>Clip: ${fTime(a)} to ${fTime(b)} (${fDur(b-a)}). Check a file with <code>sha256sum</code> (Linux), <code>shasum -a 256</code> (Mac) or <code>certutil -hashfile FILE SHA256</code> (Windows).</p><table>${(sums.length?sums:[[null,clipName],...origs.map(o=>[null,o.name])]).map(([h,n])=>`<tr><th style="width:auto;font-family:monospace;font-weight:400">${esc(n)}</th><td style="font-family:monospace;font-size:12px;word-break:break-all">${h||''}</td></tr>`).join('')}</table>${origs.length?`<p><small>Copied from: ${origs.map(o=>esc(o.src)).join(', ')}</small></p>`:''}`;
       await pinSrcs();sumBlob=new Blob([summaryHtml(T,extra)],{type:'text/html'});pinSrcsDrop();await put('incident_summary.html',sumBlob);files.splice(1,0,{name:'incident_summary.html',blob:sumBlob,d:'Date, place, speed, peak G-force, a picture from each camera, and the file names. Open it and print it, or save it as a PDF. Send this one too.'});
       if(want.hash)sums.push([await sha256(sumBlob),fname('incident_summary.html')])}
@@ -1844,13 +1849,13 @@ async function saveEvidence(){
   catch(e){if(e!=='cancel'){console.warn(e);showMsg('The evidence could not be saved',`${String(e&&e.message||e).replace(/\.+$/,'')}. Nothing on your SD card was changed. Try again, or choose another folder.`)}
     else{toast('Saving cancelled');if(dir&&root){try{await root.removeEntry(name,{recursive:true})}catch(x){}}}}
   finally{EX.run=false;$('#bEvdCancel').hidden=true;$('#evdProg').hidden=true;syncEvd()}}
-function showSaved(files,where,a,b,sumBlob){$('#evdModal').classList.remove('show');const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function showSaved(files,where,a,b,sumBlob){$('#evdModal').classList.remove('show');const esc=escHtml;
   $('#savedTxt').textContent=`${fDate(a)}, ${fTime(a)} to ${fTime(b)}. ${where}`;
   $('#savedList').innerHTML=files.map(f=>`<li><span class="fn">${esc(f.name)}</span><span class="fs">${fSize(f.size!=null?f.size:f.blob.size)}</span><span class="fd">${esc(f.d)}</span></li>`).join('');
   const sb=$('#bSavedSum');sb.hidden=!sumBlob;sb.onclick=()=>{const u=URL.createObjectURL(sumBlob);const w=IN_FRAME?null:window.open(u,'_blank');if(!w)download(sumBlob,'incident_summary.html');setTimeout(()=>URL.revokeObjectURL(u),120000)};
   $('#savedModal').classList.add('show');$('#bSavedX').focus()}
 // incident summary: a standalone page to print or save as PDF
-function summaryHtml(T,extra){const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function summaryHtml(T,extra){const esc=escHtml;
   const gp=gpsAt(T),A=L.A;let pk=null;if(A){const i0=Math.max(0,bsearch(A.t,T-10000,A.n)),i1=bsearch(A.t,T+10000,A.n);for(let i=i0;i<=i1&&i>=0;i++)if(!pk||A.ev[i]>A.ev[pk])pk=i}
   let vmax=null;if(L.G){const G=L.G,i0=Math.max(0,bsearch(G.t,T-10000,G.n)),i1=bsearch(G.t,T+10000,G.n);for(let i=i0;i<=i1&&i>=0;i++)if(vmax==null||G.spd[i]>vmax)vmax=G.spd[i]}
   const rows=[],R=(k,v)=>rows.push(`<tr><th>${k}</th><td>${v}</td></tr>`);
@@ -1880,10 +1885,11 @@ footer{margin-top:28px;font-size:13px;color:#555}@media print{.bar{display:none}
 function blobUrl64(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.onerror=()=>r(null);f.readAsDataURL(b)})}
 async function pinSrcs(){for(const p of PINS.list)if(p.img&&p.img.blob&&!p.img.src)p.img.src=await blobUrl64(p.img.blob)}
 function pinSrcsDrop(){for(const p of PINS.list)if(p.img&&p.img.blob)delete p.img.src}
-function incidentSummary(){if(!L.segs.length)return;const T=S.T,w=IN_FRAME?null:window.open('','_blank');   // the window opens now, so the browser does not block it
+function summaryMoment(a,b){const ev=evList().filter(x=>x.t>=a&&x.t<=b).sort((x,y)=>(y.g?y.g.g:0)-(x.g?x.g.g:0))[0];return ev?(ev.g?ev.g.at:ev.t):Math.round((a+b)/2)}
+function incidentSummary(){if(!L.segs.length)return;const [ra,rb]=evdRange(),T=summaryMoment(ra,rb),w=IN_FRAME?null:window.open('','_blank');   // the window opens now, so the browser does not block it
   pinSrcs().then(()=>{const html=summaryHtml(T);pinSrcsDrop();
     const blob=new Blob([html],{type:'text/html'}),url=URL.createObjectURL(blob);
-    if(w&&!w.closed)w.location.href=url;else{download(blob,`incident_summary_${stamp(T)}.html`);toast('Summary page saved to your downloads folder. Open it to print it.',4000)}
+    if(w&&!w.closed)w.location.href=url;else{download(blob,`incident_summary_${stamp(T)}.html`);toast('Summary page saved to your downloads folder. Open it to print it.')}
     setTimeout(()=>URL.revokeObjectURL(url),120000)})}
 
 /* =====================================================================
@@ -1918,7 +1924,7 @@ function updateHUD(){syncEvPos();
     const want=g.trk,prev=ar._r==null?want:ar._r;const r=prev+(((want-prev)%360+540)%360-180);if(r!==ar._r||ar._r==null){ar._r=r;ar.style.transform=`rotate(${r}deg)`}}
   else{setTxt('hSpd','—');setTxt('hHead',L.G?'no GPS fix':'no GPS');if(!ar.classList.contains('off'))ar.classList.add('off')}
   {const hg=$('#hG');hg.hidden=!L.A;if(L.A){const a=accAt(T);let v='—';
-    if(a){const parts=[];if(Math.abs(a.lon)>=0.05)parts.push([a.lon>0?'Speeding up':'Braking',Math.abs(a.lon)]);if(Math.abs(a.lat)>=0.05)parts.push([a.lat>0?'Right turn':'Left turn',Math.abs(a.lat)]);
+    if(a){const parts=[];if(Math.abs(a.lon)>=0.05)parts.push([a.lon>0?'Speeding up':'Braking',Math.abs(a.lon)]);if(Math.abs(a.lat)>=0.05)parts.push([a.lat>0?'Turning right':'Turning left',Math.abs(a.lat)]);
       parts.sort((x,y)=>y[1]-x[1]);v=parts.length?`${parts[0][0]} ${parts[0][1].toFixed(2)} g <i>${gWord(parts[0][1])}</i>`:'Steady'}
     setTxt('hGv',v)}}
   // transport info
@@ -1944,7 +1950,7 @@ function tileEl(id){let t=tileEls.get(id);if(t)return t;const v=isVid(id);
   t.innerHTML=`<div class="tin"></div><div class="tbar"><div class="tlab"${v?' title="Drag onto another camera to swap places"':''}>${v?'<svg class="grip" viewBox="0 0 24 24"><path d="M8 4h3v3H8zm5 0h3v3h-3zM8 10.5h3v3H8zm5 0h3v3h-3zM8 17h3v3H8zm5 0h3v3h-3z"/></svg>':''}<span class="tname"></span><span class="tsub"></span></div><div class="tbtns"></div></div><div class="tmsg"></div>`;
   const btns=$('.tbtns',t);
   const add=(act,icon,title,cls)=>{const b=el('button','tb'+(cls?' '+cls:''),icon);b.dataset.act=act;b.title=title;btns.appendChild(b)};
-  if(v){add('info',IC.info,'Video info: resolution, frame rate, codec…');add('zoom',IC.zoom,'Zoom in (or scroll on the video; drag to pan)');add('focus',IC.focus,'Set as main camera (or double-click the video)');add('audio',IC.speaker,'Play audio from this camera');add('mirror',IC.mirror,'Mirror (flip left–right)','x2');add('flip',IC.flip,'Flip upside down','x2');add('fit',IC.fit,'Fill / fit','x2');add('snap',IC.cam,'Save snapshot (PNG)','x2');add('max',IC.max,'Fill the whole video area with this camera')}
+  if(v){add('info',IC.info,'Video info: resolution, frame rate, codec…');add('zoom',IC.zoom,'Zoom in (or scroll on the video; drag to pan)');add('focus',IC.focus,'Set as main camera (1–9, or double-click the video)');add('audio',IC.speaker,'Play audio from this camera');add('mirror',IC.mirror,'Mirror (flip left–right)','x2');add('flip',IC.flip,'Flip upside down','x2');add('fit',IC.fit,'Fill / fit','x2');add('snap',IC.cam,'Save a snapshot of this camera (PNG)','x2');add('max',IC.max,'Show only this camera (Esc to go back)')}
   else if(id==='MAP'){add('follow',IC.target,'Follow the car (C)');$('.tname',t).textContent='Map'}
   else $('.tname',t).textContent='G-sensor';
   if(v){const zb=el('div','zbadge');zb.title='Click to reset zoom';t.appendChild(zb);const vi=el('div','vinfo');t.appendChild(vi)}
@@ -1979,7 +1985,7 @@ function applyLayout(){
   const hid=new Set(lay.hidden),showMap=has&&!hid.has('MAP')&&(!L.teleDone||!!L.G),showAcc=has&&!hid.has('ACC')&&(!L.teleDone||!!L.A),sideOn=(showMap||showAcc)&&W>=700;
   const SW=sideOn?Math.round(clamp(lay.sideW,200,Math.max(200,W*0.5))):0,GAP=sideOn?4:0,VW=Math.max(0,W-SW-GAP);
   $('#vids').style.width=VW+'px';const side=$('#side');side.style.width=SW+'px';side.style.display=sideOn?'':'none';
-  const ids=has?visVids():[];const {r,sp}=layoutVideos(ids,VW,H);const f=curFocus(ids);
+  const ids=has?visVids():[];const {r,sp}=layoutVideos(ids,VW,H);const f=curFocus(ids);$('#allHid').hidden=!(has&&!ids.length&&!showMap&&!showAcc);
   for(const [id,t] of tileEls){if(!isVid(id))continue;const q=r[id],p=P.get(id);
     if(!q){t.style.display='none';if(p)p.needed=false;continue}
     t.style.display='';t.style.left=q.x+'px';t.style.top=q.y+'px';t.style.width=q.w+'px';t.style.height=q.h+'px';
@@ -1997,7 +2003,6 @@ function applyLayout(){
     keep.add(d.k);e.className='split '+d.o+(e.classList.contains('drag')?' drag':'');e.style.left=d.x+'px';e.style.top=d.y+'px';
     if(d.o==='v'){e.style.height=d.len+'px';e.style.width=''}else{e.style.width=d.len+'px';e.style.height=''}}
   for(const [k,e] of SPL)if(!keep.has(k)){e.remove();SPL.delete(k)}
-  $$('#layoutSel button').forEach(b=>{const on=b.dataset.m===lay.mode;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
   $$('.tile.vid').forEach(t=>{const id=t.dataset.id;const fb=$('.tb[data-act=focus]',t),mb=$('.tb[data-act=max]',t);if(fb)fb.classList.toggle('on',lay.mode!=='grid'&&id===f);if(mb)mb.classList.toggle('on',S.maxTile===id)});
   if(MAP)MAP.resize();if(ACC)ACC.resize();
 }
@@ -2017,9 +2022,10 @@ function splitReset(e){const d=e.target.closest('.split');if(!d)return;layPush()
   if(k==='side')lay.sideW=D.sideW;else if(k==='mapH')lay.mapH=D.mapH;else if(k==='col')lay.col=0.5;else if(k==='row')lay.row=0.5;else if(k==='strip')lay.strip=D.strip;save();applyLayout()}
 // layout history: every change can be undone; the layout is remembered for each number of cameras
 const LH=[];function layPush(){LH.push(JSON.stringify(S.set.lay));if(LH.length>40)LH.shift();syncUndo()}
+function mapFollow(){if(MAP){MAP.follow=true;MAP.dirty=true;MAP.syncBtn()}}
 function syncUndo(){const b=$('#bLayUndo');if(b)b.disabled=!LH.length}
-function layUndo(){if(!LH.length)return;S.set.lay=JSON.parse(LH.pop());S.maxTile=null;save();buildTilesMenu();buildFocusSel();applyLayout();syncUndo()}
-function layReset(){layPush();S.set.lay=JSON.parse(JSON.stringify(DEF.lay));S.maxTile=null;save();buildTilesMenu();buildFocusSel();applyLayout()}
+function layUndo(){if(!LH.length)return;S.set.lay=JSON.parse(LH.pop());S.maxTile=null;save();buildTilesMenu();applyLayout();syncUndo()}
+function layReset(){layPush();S.set.lay=JSON.parse(JSON.stringify(DEF.lay));S.maxTile=null;save();buildTilesMenu();applyLayout()}
 function layRecall(){const m=S.set.layBy[L.keys.length];if(m){S.set.lay=Object.assign(JSON.parse(JSON.stringify(DEF.lay)),JSON.parse(JSON.stringify(m)))}LH.length=0;syncUndo()}
 const LAYNAMES={grid:'All equal',bottom:'Main camera, small ones below',right:'Main camera, small ones at the right',left:'Main camera, small ones at the left'};
 function setMode(m){layPush();const lay=S.set.lay;lay.mode=m;if(m!=='grid')lay.last=m;S.maxTile=null;save();applyLayout()}
@@ -2031,7 +2037,7 @@ function ensureTiles(){
   for(const [id,t] of tileEls)if(isVid(id)&&!L.keys.includes(id)){if(P.has(id)){P.get(id).destroy();P.delete(id)}else t.remove();tileEls.delete(id)}
   if(!MAP)MAP=new MiniMap(tileEl('MAP'));
   if(!ACC)ACC=new AccPanel(tileEl('ACC'));
-  buildTilesMenu();buildFocusSel();
+  buildTilesMenu();
 }
 // hide what the footage can't use: speed/heading without GPS, layout & audio pickers with one camera
 const IC_WARN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
@@ -2048,7 +2054,7 @@ function showDataNote(){const m=missingData(),dn=$('#dataNote');if(!m.gps&&!m.ac
 function adaptUI(){const one=L.keys.length<=1,noGps=L.teleDone&&!L.G;$('#hud').style.visibility=L.segs.length?'':'hidden';$('#tlKey').hidden=!L.segs.length;
   {const m=missingData();if(!m.gps&&!m.acc)$('#dataNote').classList.remove('show')}
   document.body.classList.toggle('single',one);$('#hud').classList.toggle('nogps',noGps);
-  for(const id of ['#layoutSel','#audSel'])$(id).classList.toggle('hide',one);
+  $('#audSel').classList.toggle('hide',one);
   const lg=$('#legend');if(lg){const has=c=>L.segs.some(x=>x.cat===c);for(const sp of lg.children){const k=sp.dataset.k;sp.classList.toggle('hide',(k==='speed'&&noGps)||(k==='mark'&&L.teleDone&&!L.A)||(k==='parking'&&!has('parking'))||(k==='event'&&!has('event'))||(k==='gap'&&L.spans.length<2&&L.segs.length>0))}}}
 const plural=(n,a,b)=>`${fmtN(n)} ${n===1?a:(b||a+'s')}`;
 // what was loaded, and what the app changed for the user; it stays until closed
@@ -2064,30 +2070,32 @@ function loadSummary(stopped){const n=L.keys.length,ev=evList(),nd=L.dupes.hidde
   else if(m.gps||m.acc)q.push(`No ${m.gps&&m.acc?'GPS or G-sensor':m.gps?'GPS':'G-sensor'} data in these files. <button class="linkbtn" data-go="why">Why?</button>`);
   $('#sumList').innerHTML=it.map(x=>`<li>${x}</li>`).join('')+q.map(x=>`<li class="quiet">${x}</li>`).join('');
   $('#bSumDet').hidden=!(nd||mv||L.dupes.edited.length);$('#sumCard').hidden=false;
-  try{if(!localStorage.getItem('dashlens.tipsSeen'))$('#tips').classList.add('show')}catch(e){}}
-function showDetails(sec){const b=$('#detBody'),D=L.dupes,h=[];const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  showTips()}
+function showTips(){if(!$('#sumCard').hidden)return;try{if(!localStorage.getItem('dashlens.tipsSeen'))$('#tips').classList.add('show')}catch(e){}}
+function showDetails(sec){const b=$('#detBody'),D=L.dupes,h=[];const esc=escHtml;
   if(D.hidden.length)h.push(`<h3 id="det-dupes">${plural(D.hidden.length,'duplicate copy','duplicate copies')} hidden</h3><ul>${D.hidden.map(d=>`<li>${esc(d.seg.path)} <span>copy of</span> ${esc(d.of.path)}</li>`).join('')}</ul>`);
   if(D.edited.length)h.push(`<h3 id="det-edited">${plural(D.edited.length,'possible edited copy','possible edited copies')} kept</h3><p class="note">Same name and time, but a different recording clock inside the file.</p><ul>${D.edited.map(d=>`<li>${esc(d.seg.path)} <span>compare with</span> ${esc(d.of.path)}</li>`).join('')}</ul>`);
   const mv=L.segs.filter(s=>s.corr);
-  if(mv.length)h.push(`<h3 id="det-moved">Corrected the time of ${plural(mv.length,'clip')}</h3><p class="note">The file name and the camera's GPS clock disagreed. The GPS clock is used. Turn this off in Settings › Playback.</p><ul>${mv.map(s=>`<li>${esc(s.path)} <span>${fTime(s.start0)} → ${fTime(s.start)}</span></li>`).join('')}</ul>`);
+  if(mv.length)h.push(`<h3 id="det-moved">Corrected the time of ${plural(mv.length,'clip')}</h3><p class="note">The file name and the camera's GPS clock disagreed. The GPS clock is used. Turn this off in Settings, Playback &amp; timeline.</p><ul>${mv.map(s=>`<li>${esc(s.path)} <span>${fTime(s.start0)} → ${fTime(s.start)}</span></li>`).join('')}</ul>`);
   b.innerHTML=h.join('')||'<p class="note">Nothing was hidden or changed.</p>';$('#detModal').classList.add('show');$('#bDetX').focus();
   const t=sec&&$('#det-'+sec);if(t)t.scrollIntoView({block:'start'})}
-function buildFocusSel(){const s=$('#focusSel');if(!s)return;s.innerHTML='';const ks=visVids();if(!ks.length){s.innerHTML='<option value="">Focus: –</option>';return}
-  ks.forEach(k=>{const o=el('option');o.value=k;o.textContent=`Focus: ${chLabel(k)}`;s.appendChild(o)});s.value=curFocus(ks)}
+const LAYICON=(()=>{const R=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1"/>`,v=x=>`<svg viewBox="0 0 24 24" aria-hidden="true">${x}</svg>`;
+  return {grid:v(R(2,4,9.5,7.5)+R(12.5,4,9.5,7.5)+R(2,12.5,9.5,7.5)+R(12.5,12.5,9.5,7.5)),bottom:v(R(2,3,20,12)+R(2,16,6,5)+R(9,16,6,5)+R(16,16,6,5)),
+    right:v(R(2,3,14,18)+R(17,3,5,5.3)+R(17,9.35,5,5.3)+R(17,15.7,5,5.3)),left:v(R(2,3,5,5.3)+R(2,9.35,5,5.3)+R(2,15.7,5,5.3)+R(8,3,14,18))}})();
 function swapTiles(a,b){layPush();const lay=S.set.lay,before=curFocus(visVids()),o=vidOrder(),i=o.indexOf(a),j=o.indexOf(b);if(i<0||j<0)return;o[i]=b;o[j]=a;
   // in a focus layout, dropping a camera onto the big one (or vice versa) makes it the focus
   if(lay.mode!=='grid'){if(before===a)lay.focus=b;else if(before===b)lay.focus=a;else lay.focus=before}
-  save();buildFocusSel();applyLayout()}
+  save();applyLayout()}
 function buildTilesMenu(){const m=$('#tilesMenu');const n=L.keys.length;
-  m.innerHTML=`<div class="mh">Preset</div><div class="presets" role="radiogroup" aria-label="Layout presets">${n>1?Object.entries(LAYNAMES).map(([k,nm])=>`<button role="radio" data-m="${k}" aria-checked="${S.set.lay.mode===k}">${$(`#layoutSel [data-m=${k}]`)?$(`#layoutSel [data-m=${k}]`).innerHTML:''}${nm}</button>`).join(''):'<div class="mnote">One camera: no presets needed.</div>'}</div><hr><div class="mh">Show these views</div>`;
+  m.innerHTML=`<div class="mh">Preset</div><div class="presets" role="radiogroup" aria-label="Layout presets">${n>1?Object.entries(LAYNAMES).map(([k,nm])=>`<button role="radio" data-m="${k}" aria-checked="${S.set.lay.mode===k}">${LAYICON[k]||''}${nm}</button>`).join(''):'<div class="mnote">One camera: no presets needed.</div>'}</div><hr><div class="mh">Show these views</div>`;
   $$('.presets button',m).forEach(b=>b.onclick=()=>{setMode(b.dataset.m);buildTilesMenu()});
   for(const id of allTileIds()){if(L.teleDone&&((id==='MAP'&&!L.G)||(id==='ACC'&&!L.A)))continue;const lab=el('label');const cb=el('input');cb.type='checkbox';cb.checked=!S.set.lay.hidden.includes(id);
-    cb.onchange=()=>{layPush();const h=S.set.lay.hidden;const i=h.indexOf(id);if(cb.checked&&i>=0)h.splice(i,1);else if(!cb.checked&&i<0)h.push(id);if(S.maxTile===id)S.maxTile=null;save();buildFocusSel();applyLayout()};
+    cb.onchange=()=>{layPush();const h=S.set.lay.hidden;const i=h.indexOf(id);if(cb.checked&&i>=0)h.splice(i,1);else if(!cb.checked&&i<0)h.push(id);if(S.maxTile===id)S.maxTile=null;save();applyLayout()};
     lab.append(cb,document.createTextNode(id==='MAP'?'Map':id==='ACC'?'G-sensor':chLabel(id)));m.appendChild(lab)}
   const md=missingData();if(md.gps||md.acc){const n=el('button');n.className='vwarn';
     n.innerHTML=IC_WARN+'<span>'+(md.gps&&md.acc?'No GPS or G-sensor data':md.gps?'No GPS data':'No G-sensor data')+' in these files, so '+(md.gps&&md.acc?'the map and G-sensor are':md.gps?'the map is':'the G-sensor is')+' hidden.<u>Why?</u></span>';
     n.onclick=e=>{e.stopPropagation();m.classList.remove('show');showDataNote()};m.appendChild(n)}
-  const f=el('div');f.innerHTML=`<hr><div class="mrow"><button class="btn" id="bLayUndo">${IC.undo}<span>Undo</span></button><button class="btn" id="bLayReset">Reset layout</button></div><div class="mnote">Drag a camera's label onto another camera to swap them, or drag the thin lines to resize. ${n?`This layout is remembered for footage with ${n} camera${n>1?'s':''}.`:''}</div>`;m.appendChild(f);
+  const f=el('div');f.innerHTML=`<hr><div class="mrow"><button class="btn" id="bLayUndo" title="Undo (Ctrl + Z)">${IC.undo}<span>Undo</span></button><button class="btn" id="bLayReset">Reset layout</button></div><div class="mnote">Drag a camera's label onto another camera to swap them, or drag the thin lines to resize. ${n?`This layout is remembered for footage with ${n} camera${n>1?'s':''}.`:''}</div>`;m.appendChild(f);
   $('#bLayUndo').onclick=e=>{e.stopPropagation();layUndo()};$('#bLayReset').onclick=e=>{e.stopPropagation();layReset()};syncUndo()}
 
 /* ---------- tile interactions ---------- */
@@ -2118,7 +2126,7 @@ function tileAction(id,act){
   if(act==='zoom'){const p=P.get(id);if(p){const z=p.zoom.z;if(z<1.9)p.zoomAt(0.5,0.5,2/z);else if(z<3.9)p.zoomAt(0.5,0.5,4/z);else p.resetZoom()}return}
   if(act==='sync-'||act==='sync+'||act==='sync0'){const c=chCfg(id);c.offset=act==='sync0'?0:Math.round(((c.offset||0)+(act==='sync+'?100:-100))/100)*100;save();if(S.playing){S.stalled=true;S.stallSince=performance.now()}renderInfo(id);return}
   if(act==='info'){const t=tileEls.get(id),vi=t&&$('.vinfo',t);if(vi){vi.classList.toggle('show');$('.tb[data-act=info]',t).classList.toggle('on',vi.classList.contains('show'));renderInfo(id)}return}
-  if(act==='follow'){MAP.follow=true;MAP.dirty=true;MAP.syncBtn();return}
+  if(act==='follow'){mapFollow();return}
   const c=chCfg(id);
   if(act==='mirror')c.mirror=!c.mirror;else if(act==='flip')c.flip=!c.flip;else if(act==='fit')c.fit=c.fit==='cover'?'contain':'cover';
   else if(act==='audio'){S.set.audioCh=id;S.leadKey=id;buildAudSel();applyLayout()}
@@ -2200,7 +2208,7 @@ class MiniMap{
     this.cv.addEventListener('pointermove',mv);this.cv.addEventListener('pointerup',up);this.cv.addEventListener('pointercancel',up)}
   clickSeek(e){const G=L.G;if(!G)return;const r=this.cv.getBoundingClientRect();const s=256*2**this.z;const wx=this.cx+(e.clientX-r.left-this.w/2)/s,wy=this.cy+(e.clientY-r.top-this.h/2)/s;
     let best=-1,bd=1e18;for(let i=0;i<G.n;i++){const dx=G.wx[i]-wx,dy=G.wy[i]-wy,d=dx*dx+dy*dy;if(d<bd){bd=d;best=i}}
-    if(best>=0&&Math.sqrt(bd)*s<14){seekTo(G.t[best]);toast(`Jumped to ${fTime(G.t[best])}`,1200)}}
+    if(best>=0&&Math.sqrt(bd)*s<14){seekTo(G.t[best]);toast(`Jumped to ${fTime(G.t[best])}`)}}
   tile_(li,z,x,y){const n=2**z;if(y<0||y>=n)return null;x=((x%n)+n)%n;const k=li+'/'+z+'/'+x+'/'+y;let t=this.tiles.get(k);if(t&&(this._tick=(this._tick||0)+1)%8===0){this.tiles.delete(k);this.tiles.set(k,t)}
     if(!t){const fn=this.src.layers[li];if(!fn)return null;t={img:new Image(),ok:false};t.img.decoding='async';t.img.onload=()=>{t.ok=true;if(!li)this.oks++;this.bgv=(this.bgv|0)+1;this.dirty=true};t.img.onerror=()=>{t.err=true;if(!li)this.errs++;this.bgv=(this.bgv|0)+1;this.dirty=true};
       t.img.src=fn(z,x,y);this.tiles.set(k,t);if(this.tiles.size>360){for(const [kk,ot] of this.tiles){if(!ot.ok&&!ot.err)continue;this.tiles.delete(kk);if(this.tiles.size<=280)break}}}
@@ -2255,6 +2263,7 @@ class MiniMap{
     if(!G){c.fillStyle='#b4b4b4';c.fillText(L.segs.length?(L.tele.files||L.tele.blocks?'No GPS data decoded (see Settings → Diagnostics)':'Reading GPS…'):'Map',W/2,H/2)}
     else if(!g){c.fillStyle='#000a';c.fillRect(W/2-64,40,128,22);c.fillStyle='#b4b4b4';c.fillText('No GPS fix here',W/2,55)}
     if(this._hadG!==!!L.G)this.syncBtn();
+    if(!this.src.layers.length&&G){const m='Map pictures are off (Settings, Privacy). The route is still shown.';c.font='12px "IBM Plex Sans",system-ui';const w=c.measureText(m).width+16;c.fillStyle='#000c';c.fillRect(W/2-w/2,H-34,w,24);c.fillStyle='#bdbdbd';c.textAlign='center';c.fillText(m,W/2,H-18)}
     if(this.src.layers.length&&this.errs>6&&!this.oks){c.font='12px "IBM Plex Sans",system-ui';const m='Map tiles need internet. The route is still shown.',w=c.measureText(m).width+16;c.fillStyle='#000c';c.fillRect(W/2-w/2,36,w,24);c.fillStyle='#ededed';c.textAlign='center';c.fillText(m,W/2,52)}
   }
 }
@@ -2401,7 +2410,7 @@ function scrubTo(e){const r=$('#tl').getBoundingClientRect();scrubX=clamp(e.clie
 function hover(e){const r=$('#tl').getBoundingClientRect();const x=e.clientX-r.left;if(!L.spans.length)return;const t=c2t(x2c(x),false);TL.hoverT=inSpan(t)>=0?t:null;laneVals();
   const hv=$('#tlHover'),tip=$('#tlTip');hv.style.display='block';hv.style.left=x+'px';
   const si=inSpan(t);let s;if(si<0){const i=spanIdx(t);const a=L.spans[i],b=L.spans[i+1];s=a&&b?`<b>No recording</b>, ${fTime(a.e,false)} to ${fTime(b.s,false)} (${fGap(b.s-a.e)})`:'' }
-  else{s=`${fDay(t)} <b>${fTime(t)}</b>`;const g=interpG(L.G,t);if(g)s+=`, ${fSpd(g.spd)} (GPS)`;
+  else{s=`${fDay(t)} <b>${fTime(t)}</b>`;
     const y=e.clientY-r.top;const ri=TL.rows&&Math.floor((y-TL.rows.y)/TL.rows.h);
     const own=ri>=0&&TL.rows&&ri<L.keys.length?[L.keys[ri]]:L.keys;const seen=new Set();
     for(const k of own){const p=P.get(k);const sg=p&&p.find(t);if(sg&&!seen.has(sg.cat)){seen.add(sg.cat);s+=`<br><i class="sw sw-${sg.cat==='normal'?'drive':sg.cat==='event'?'event':'park'}"></i>${CAT_NAME[sg.cat]||sg.cat}${own.length===1?`, ${chLabel(k)}: ${sg.name}`:''}`}}
@@ -2454,7 +2463,7 @@ function drawTL(){
     // lane names, on a backing so the data never hides them
     c.font='12px "IBM Plex Sans",system-ui';c.textAlign='left';
     const lab=(t,y)=>{const w=c.measureText(t).width+8;c.fillStyle='#141414e6';c.fillRect(24,y-11,w,15);c.fillStyle='#b4b4b4';c.fillText(t,28,y)};
-    TL.lab={};if(G){const t0=S.set.units==='mph'?'Speed, mph':'Speed, km/h';lab(t0,top+band-4);TL.lab.s={x:24+c.measureText(t0).width+12,y:top+band-15}}if(A){lab('G-force',gTop+gb-3);TL.lab.g={x:24+c.measureText('G-force').width+12,y:gTop+gb-14}}}else TL.lab=null;
+    TL.lab={};if(G){const t0=S.set.units==='mph'?'Speed, mph':'Speed, km/h';lab(t0,top+band-4);TL.lab.s={x:24+c.measureText(t0).width+12,y:top+band-15}}if(A){lab('G-force, total',gTop+gb-3);TL.lab.g={x:24+c.measureText('G-force, total').width+12,y:gTop+gb-14}}}else TL.lab=null;
   // channel rows
   L.keys.forEach((key,r)=>{const y=rowsY+r*rowH,ch=L.chans.get(key);
     for(const s of ch.segs){const x0=X(t2c(s.start)),x1=X(t2c(s.end));if(x1<0||x0>W)continue;c.fillStyle=TL.pat[s.cat]||TL.pat.normal;const bw=Math.max(1,x1-x0-(x1-x0>6?2:0)),bh=rowH-2;if(c.roundRect&&bw>6){c.beginPath();c.roundRect(x0,y,bw,bh,Math.min(3,bh/2));c.fill()}else c.fillRect(x0,y,bw,bh)}
@@ -2509,9 +2518,9 @@ function drawPlayhead(){drawOv();const h=$('#tlHead');if(!L.spans.length){h.styl
    ===================================================================== */
 function buildTripSel(){const s=$('#tripSel');s.innerHTML='';if(!L.spans.length){s.innerHTML='<option>No footage loaded</option>';return}
   L.spans.forEach((sp,i)=>{const o=el('option');o.value=i;o.textContent=`${i+1}. ${fDay(sp.s)} ${fTime(sp.s,false)}–${fTime(sp.e,false)} (${fGap(sp.e-sp.s)})`;s.appendChild(o)});const i=inSpan(S.T);if(i>=0)s.value=String(i)}
-function buildAudSel(){const s=$('#audSel');s.innerHTML='';for(const k of L.keys){const o=el('option');o.value=k;const has=L.chans.get(k).all.some(x=>x.meta&&x.meta.hasAudio);o.textContent=`Audio: ${k}${L.chans.get(k).all.some(x=>x.meta)&&!has?' (none)':''}`;s.appendChild(o)}if(S.leadKey)s.value=S.leadKey;for(const p of P.values())p.applyCfg()}
+function buildAudSel(){const s=$('#audSel');s.innerHTML='';for(const k of L.keys){const o=el('option');o.value=k;const has=L.chans.get(k).all.some(x=>x.meta&&x.meta.hasAudio);o.textContent=`Audio: ${chLabel(k)}${L.chans.get(k).all.some(x=>x.meta)&&!has?' (none)':''}`;s.appendChild(o)}if(S.leadKey)s.value=S.leadKey;for(const p of P.values())p.applyCfg()}
 function buildChRows(){const tb=$('#chRows');tb.innerHTML='';for(const k of L.keys){const c=chCfg(k);const tr=el('tr');
-  tr.innerHTML=`<td><b>${k}</b></td><td><input type="text" data-k="${k}" data-f="label" placeholder="e.g. Front, Rear, Cabin" value="${(c.label||'').replace(/"/g,'&quot;')}"></td>`;tb.appendChild(tr)}
+  tr.innerHTML=`<td><b>${k}</b></td><td><input type="text" data-k="${k}" data-f="label" placeholder="${escHtml(chLabel(k))}" value="${(c.label||'').replace(/"/g,'&quot;')}"></td>`;tb.appendChild(tr)}
   if(!L.keys.length)tb.innerHTML='<tr><td colspan="2" class="note">Load footage to name the cameras.</td></tr>'}
 let gsShow=null;   // refreshes the G-sensor scale readout in Settings
 function updateDiag(full){
@@ -2565,7 +2574,7 @@ function bindSeg(name,key,after){const g=document.querySelector(`.segsel[data-fo
 function bindSettings(){
   $('#chRows').addEventListener('input',e=>{const t=e.target,k=t.dataset.k,f=t.dataset.f;if(!k)return;const c=chCfg(k);
     if(f==='label')c.label=t.value.trim();
-    save();const p=P.get(k);if(p)p.applyCfg();buildTilesMenu();buildAudSel();buildFocusSel()});
+    save();const p=P.get(k);if(p)p.applyCfg();buildTilesMenu();buildAudSel()});
   const bindChk=(id,get,set)=>{const e=$(id);e.checked=get();e.onchange=()=>{set(e.checked);save()}};
   bindChk('#sRetime',()=>S.set.gpsRetime!==false,v=>{S.set.gpsRetime=v;rebuildTele(true)});
   bindChk('#sComp',()=>S.set.compress,v=>{S.set.compress=v;const t=S.T;rebuildModel();fitView();S.T=t});
@@ -2577,8 +2586,8 @@ function bindSettings(){
   for(const id of ['#sGf','#sGr'])for(const [v,n] of [['auto','Automatic'],['+x','+X'],['-x','−X'],['+y','+Y'],['-y','−Y'],['+z','+Z'],['-z','−Z']]){const o=el('option');o.value=v;o.textContent=n;$(id).appendChild(o)}
   bindSel('#sSpdU','spdUnit',rebuildTele);bindSel('#sGf','gFwd',rebuildTele);bindSel('#sGr','gRight',rebuildTele);
   {const r=$('#sGsR'),v=$('#sGsV'),a=$('#sGsA');let tm=0;
-    const show=()=>{const auto=S.set.gScale==='auto';a.checked=auto;r.disabled=auto;const val=auto?(L.tele.gScale||256):+S.set.gScale;r.value=2148-clamp(val,100,2048);v.textContent=`${+(+val).toFixed(1)} = 1 g`;r.style.opacity=auto?0.45:1};
-    r.oninput=()=>{const val=2148-r.value;S.set.gScale=String(val);a.checked=false;r.disabled=false;r.style.opacity=1;v.textContent=`${val} = 1 g`;save();clearTimeout(tm);tm=setTimeout(rebuildTele,60)};
+    const show=()=>{const auto=S.set.gScale==='auto';a.checked=auto;r.disabled=auto;const val=auto?(L.tele.gScale||256):+S.set.gScale;r.value=2148-clamp(val,100,2048);v.textContent=`${+(+val).toFixed(1)} = 1 g${auto?' (automatic)':''}`;r.setAttribute('aria-valuetext',v.textContent);r.style.opacity=auto?0.45:1};
+    r.oninput=()=>{const val=2148-r.value;S.set.gScale=String(val);a.checked=false;r.disabled=false;r.style.opacity=1;v.textContent=`${val} = 1 g`;r.setAttribute('aria-valuetext',v.textContent);save();clearTimeout(tm);tm=setTimeout(rebuildTele,60)};
     a.onchange=()=>{S.set.gScale=a.checked?'auto':String(2148-r.value);save();rebuildTele();show()};
     gsShow=show;show()}
   const ms=$('#sMap');for(const k in MAPSRC){if(k==='none')continue;const o=el('option');o.value=k;o.textContent=MAPSRC[k].name;ms.appendChild(o)}bindSel('#sMap','mapSrc',()=>MAP&&MAP.setSource(S.set.mapSrc));
@@ -2620,8 +2629,8 @@ function bindTips(){TIP.el=$('#tip');
   document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('[data-tip],[title]');if(t&&t.matches(':focus-visible')){tipHide(true);tipShow(t)}});
   document.addEventListener('focusout',()=>tipHide(true));
   document.addEventListener('keydown',e=>{if(e.key==='Escape')tipHide(true)},true)}
-/* ---- drawers: pushed beside the video on windows 1440 px or wider, over it below that; changed settings marked ---- */
-function syncDrawer(){const open=$('#setPanel').classList.contains('show')||$('#evPanel').classList.contains('show');const on=open&&innerWidth>=1440;
+/* ---- drawers: pushed beside the video on windows 1760 px or wider, over it below that; changed settings marked ---- */
+function syncDrawer(){const open=$('#setPanel').classList.contains('show')||$('#evPanel').classList.contains('show');const on=open&&innerWidth>=1760;   // 1280 px for the app + 480 px for the drawer
   if(document.body.classList.contains('dinline')!==on){document.body.classList.toggle('dinline',on);requestAnimationFrame(()=>{applyLayout();TL.dirty=true;tlResize&&tlResize();if(MAP)MAP.resize()})}
   if($('#setPanel').classList.contains('show'))markChanged()}
 const SETROW=[['#sComp','compress'],['#sRetime','gpsRetime'],['#sMapOn','mapTiles'],['#sMap','mapSrc'],['[data-for=sUnits]','units'],['[data-for=sGsm]','gSmooth'],['#sSpdU','spdUnit'],['#sGf','gFwd'],['#sGr','gRight'],['#sGsA','gScale'],['#sCatN','cats']];
@@ -2698,12 +2707,12 @@ function bindFiles(){
 const RATES=[0.25,0.5,1,1.5,2,4,8,16];
 function setRate(r){S.set.rate=r;$('#rateSel').value=String(r);save();if(S.playing){S.stalled=true;S.stallSince=performance.now()}}
 function bindControls(){
-  $('#bOpen').innerHTML=IC.folder+'<span>Open folder</span>';$('#bOpen2').innerHTML=IC.folder+'<span>Open folder…</span>';$('#bAdd').innerHTML='Open files';
+  $('#bOpen').innerHTML=IC.folder+'<span>Open folder</span>';$('#bOpen2').innerHTML=IC.folder+'<span>Open folder</span>';$('#bAdd').innerHTML='Open files';
 $('#bSet').innerHTML=IC.gear;$('#bHelp').innerHTML=IC.help;$('#bFs').innerHTML=IC.full;$('#bSetX').innerHTML=IC.x;
   $('#bPrevF').innerHTML=IC.prevF;$('#bNextF').innerHTML=IC.nextF;$('#bBack').innerHTML=IC.back10;$('#bFwd').innerHTML=IC.fwd10;$('#bFrB').innerHTML=IC.frB;$('#bFrF').innerHTML=IC.frF;
   $('#bPrevE').innerHTML=IC.triL+'<span>Event</span>';$('#bNextE').innerHTML='<span>Event</span>'+IC.triR;$('#bEvX').innerHTML=IC.x;
   $('#bPrevE').onclick=()=>evJump(-1);$('#bNextE').onclick=()=>evJump(1);$('#bEvents').onclick=()=>{$('#evPanel').classList.contains('show')?$('#evPanel').classList.remove('show'):openEvents()};$('#bShowInc').onclick=()=>{S.incHidden=false;$('#incCard')._k=null;$('#evPanel').classList.remove('show');renderInc()};$('#bEvX').onclick=()=>$('#evPanel').classList.remove('show');
-  $('#evRows').onclick=e=>{const b=e.target.closest('button[data-i]');if(!b)return;const x=evList()[+b.dataset.i];if(x){seekTo(x.jump);const len=TL.view.c1-TL.view.c0;if(c2x(t2c(x.jump))<0||c2x(t2c(x.jump))>TL.w){TL.view.c0=t2c(x.jump)-len*0.15;TL.view.c1=TL.view.c0+len;clampView()}TL.dirty=true;renderEvents()}};
+  $('#evRows').onclick=e=>{const b=e.target.closest('button[data-i]');if(!b)return;const x=evList()[+b.dataset.i];if(x){goToMoment(x.jump);renderEvents()}};
   $('#bEvd').onclick=openEvd;$('#bEvdX').onclick=()=>{if(!EX.run)$('#evdModal').classList.remove('show')};$('#evdModal').onclick=e=>{if(e.target.id==='evdModal'&&!EX.run)e.target.classList.remove('show')};
   $('#bSetIn').onclick=()=>setInOut('in');$('#bSetOut').onclick=()=>setInOut('out');$('#bEvdGo').onclick=saveEvidence;$('#bSavedX').onclick=()=>$('#savedModal').classList.remove('show');$('#bEvdCancel').onclick=()=>{EX.cancel=true};$('#bSumGo').onclick=incidentSummary;
   $('#bZo').innerHTML=IC.minus;$('#bZi').innerHTML=IC.plus;updatePlayBtn();
@@ -2718,15 +2727,9 @@ $('#bSet').innerHTML=IC.gear;$('#bHelp').innerHTML=IC.help;$('#bFs').innerHTML=I
   // mouse wheel over the slider: 5% per notch
   vol.addEventListener('wheel',e=>{e.preventDefault();const d=e.deltaY||e.deltaX;if(!d)return;vol.value=clamp(Math.round((+vol.value+(d<0?0.05:-0.05))*100)/100,0,1);vol.oninput()},{passive:false});
   $('#audSel').onchange=e=>tileAction(e.target.value,'audio');
-  $('#tripSel').onchange=e=>{const sp=L.spans[+e.target.value];if(!sp)return;seekTo(sp.s);const len=sp.e-sp.s,pad=len*0.04+2000;TL.view={c0:sp.c0-pad,c1:sp.c0+len+pad};TL.user=true;clampView();TL.dirty=true;e.target.blur()};
+  $('#tripSel').onchange=e=>{const sp=L.spans[+e.target.value];if(!sp)return;seekTo(sp.s);zoomPreset('drive');e.target.blur()};
   $('#bSkip').onclick=()=>{S.set.skipGaps=!S.set.skipGaps;save();syncSkip()};syncSkip();
   $('#bZo').onclick=()=>zoomView(1.6);$('#bZi').onclick=()=>zoomView(0.625);$('#bZfit').onclick=()=>fitView(false);
-  {const ls=$('#layoutSel'),R=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1"/>`;
-    const LAYS=[['grid','Grid: all cameras equal',R(2,4,9.5,7.5)+R(12.5,4,9.5,7.5)+R(2,12.5,9.5,7.5)+R(12.5,12.5,9.5,7.5)],
-      ['bottom','Main camera, others below',R(2,3,20,12)+R(2,16,6,5)+R(9,16,6,5)+R(16,16,6,5)],
-      ['right','Main camera, others at right',R(2,3,14,18)+R(17,3,5,5.3)+R(17,9.35,5,5.3)+R(17,15.7,5,5.3)],
-      ['left','Main camera, others at left',R(2,3,5,5.3)+R(2,9.35,5,5.3)+R(2,15.7,5,5.3)+R(8,3,14,18)]];
-    for(const [k,,svg] of LAYS){const b=el('button','segb',`<svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>`);b.dataset.m=k;b.title=LAYNAMES[k];b.setAttribute('aria-label',LAYNAMES[k]);b.setAttribute('role','radio');b.onclick=()=>setMode(k);ls.appendChild(b)}}
   $('#bTiles').onclick=e=>{const m=$('#tilesMenu'),b=e.currentTarget;if(m.classList.contains('show')){m.classList.remove('show');b.setAttribute('aria-expanded','false');return}buildTilesMenu();const r=b.getBoundingClientRect();m.style.top=(r.bottom+6)+'px';m.style.left=Math.max(8,Math.min(window.innerWidth-280,r.left-120))+'px';m.classList.add('show');b.setAttribute('aria-expanded','true');const f=$('button,input',m);if(f)f.focus();e.stopPropagation()};
   document.addEventListener('pointerdown',e=>{if(!e.target.closest('#tilesMenu')&&!e.target.closest('#bTiles')){$('#tilesMenu').classList.remove('show');$('#bTiles').setAttribute('aria-expanded','false')}});
   $('#bSet').onclick=()=>{$('#setPanel').classList.toggle('show');updateDiag()};$('#bSetX').onclick=()=>$('#setPanel').classList.remove('show');
@@ -2753,7 +2756,7 @@ function onKey(e){
   const k=e.key;let h=true;
   const rate=d=>{const i=RATES.indexOf(S.set.rate);setRate(RATES[clamp((i<0?RATES.indexOf(1):i)+d,0,RATES.length-1)])};
   if(k===' '||k==='k'||k==='K')togglePlay();
-  else if(k==='ArrowRight'){if(e.shiftKey)seekRel(5000);else step(1)}else if(k==='ArrowLeft'){if(e.shiftKey)seekRel(-5000);else step(-1)}
+  else if(k==='ArrowRight'){if(e.shiftKey)seekRel(10000);else step(1)}else if(k==='ArrowLeft'){if(e.shiftKey)seekRel(-10000);else step(-1)}
   else if(k==='l'||k==='L'){if(!S.playing)play();else rate(1)}else if(k==='j'||k==='J')rate(-1);
   else if(k==='.')step(1);else if(k===',')step(-1);
   else if(k===']')rate(1);else if(k==='[')rate(-1);
@@ -2763,11 +2766,18 @@ function onKey(e){
   else if(k==='PageDown')fileJump(1);else if(k==='PageUp')fileJump(-1);
   else if(k==='Home'){const i=spanIdx(S.T);if(i>=0)seekTo(L.spans[i].s)}else if(k==='End'){const i=spanIdx(S.T);if(i>=0)seekTo(L.spans[i].e-2000)}
   else if(k==='m'||k==='M')$('#bMute').click();else if(k==='f'||k==='F')toggleFs();
-  else if(k==='c'||k==='C'){if(MAP){MAP.follow=true;MAP.dirty=true;MAP.syncBtn()}}
+  else if(k==='c'||k==='C')mapFollow();
   else if(k==='p'||k==='P')addPin();
   else if(k==='s'||k==='S')snapshot(mainCam());
   else if(k==='?'){const h=$('#helpModal');h.classList.toggle('show');if(h.classList.contains('show'))setTimeout(()=>$('#keyQ').focus(),0)}
-  else if(k==='Escape'){for(const id of ['#savedModal','#helpModal','#repModal','#detModal','#setPanel','#evPanel','#tilesMenu','#dataNote',...(EX.run?[]:['#evdModal'])])$(id).classList.remove('show');hideMsg();if(S.maxTile){S.maxTile=null;applyLayout()}}
+  else if(k==='Escape'){const open=['#savedModal','#helpModal','#repModal','#detModal','#setPanel','#evPanel','#tilesMenu','#dataNote',...(EX.run?[]:['#evdModal'])].filter(id=>$(id).classList.contains('show'));
+    // one Esc closes the panels that are open; with none open, it closes the cards on the video, then the single-camera view
+    if(open.length){for(const id of open)$(id).classList.remove('show');$('#bTiles').setAttribute('aria-expanded','false')}
+    else if(!$('#msgBox').hidden)hideMsg();
+    else if(!$('#sumCard').hidden)$('#bSumX').click();
+    else if($('#tips').classList.contains('show'))$('#bTipsX').click();
+    else if(S.maxTile){S.maxTile=null;applyLayout()}
+    else h=false}
   else if(/^[0-9]$/.test(k)){if(k==='0')setMode('grid');else{const id=visVids()[+k-1];if(id)toggleFocus(id)}}
   else h=false;
   if(h)e.preventDefault();
@@ -2780,12 +2790,12 @@ MONO=getComputedStyle(document.body).getPropertyValue('--mono')||'monospace';
 tlInit();bindControls();bindSettings();bindFiles();ensureTiles();applyLayout();buildChRows();adaptUI();syncEvNav();
 $('#bLoadCancel').onclick=cancelLoad;syncPriv();
 $('#bForget').onclick=e=>{const b=e.currentTarget;if(!b._arm){b._arm=1;b.textContent='Click again to forget';setTimeout(()=>{b._arm=0;b.textContent='Forget'},3000);return}b._arm=0;b.textContent='Forget';store.set('resume',{});PINS.list=[];PINS.fp=L.segs.length?libFp():null;renderPins();TL.dirty=true;toast('Saved positions and pins forgotten')};
-$('#bRangeX').onclick=()=>{EX.inT=EX.outT=null;syncEvd()};
-$('#bMsgX').innerHTML=IC.x;$('#bMsgX').onclick=hideMsg;$('#bSumX').innerHTML=IC.x;$('#bSumX').onclick=()=>{$('#sumCard').hidden=true};
+$('#bRangeX').onclick=$('#bEvdClear').onclick=()=>{EX.inT=EX.outT=null;syncEvd()};$('#bEvdStrong').onclick=useStrongest;
+$('#bMsgX').innerHTML=IC.x;$('#bMsgX').onclick=hideMsg;$('#bSumX').innerHTML=IC.x;$('#bSumX').onclick=()=>{$('#sumCard').hidden=true;showTips()};
 $('#bSumDet').onclick=()=>showDetails();$('#bDetX').onclick=()=>$('#detModal').classList.remove('show');$('#detModal').onclick=e=>{if(e.target.id==='detModal')e.target.classList.remove('show')};
-$('#sumList').onclick=e=>{const g=e.target.closest('[data-go]');if(!g)return;const k=g.dataset.go;if(k==='why')showDataNote();else if(k==='events')openEvents();else if(k==='resume'){pause();const t=+g.dataset.t;seekTo(t);const len=TL.view.c1-TL.view.c0;TL.view.c0=t2c(t)-len*0.3;TL.view.c1=TL.view.c0+len;clampView();TL.dirty=true;$('#sumCard').hidden=true}else showDetails(k)};
+$('#sumList').onclick=e=>{const g=e.target.closest('[data-go]');if(!g)return;const k=g.dataset.go;if(k==='why')showDataNote();else if(k==='events')openEvents();else if(k==='resume'){const t=+g.dataset.t;seekTo(t);const len=TL.view.c1-TL.view.c0;TL.view.c0=t2c(t)-len*0.3;TL.view.c1=TL.view.c0+len;clampView();TL.dirty=true;$('#sumCard').hidden=true}else showDetails(k)};
 $('#pinRows').onclick=e=>{const go=e.target.closest('[data-pi]'),del=e.target.closest('[data-pd]');
-  if(go){const p=PINS.list[+go.dataset.pi];if(p){pause();seekTo(p.t);TL.dirty=true}}
+  if(go){const p=PINS.list[+go.dataset.pi];if(p)goToMoment(p.t)}
   else if(del){const i=+del.dataset.pd,p=PINS.list[i];PINS.list.splice(i,1);saveResume();TL.dirty=true;renderPins();const n=$('#pinRows [data-pi]');(n||$('#bEvX')).focus();if(p)toast(`Pin at ${fTime(p.t)} removed`)}};
 $('#pinRows').oninput=e=>{const i=e.target.dataset.pn;if(i==null)return;const p=PINS.list[+i];if(p){p.note=e.target.value;saveResume()}};
 $('#bPin').onclick=addPin;$('#bCsvGo').onclick=saveCsv;

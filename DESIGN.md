@@ -99,7 +99,11 @@ The timeline is the centre of the product.
 - **Undo for each change, and "Reset layout"** [BI-45, OBD-6]. A panel can never get lost off the screen, and a
   panel that grows can always get smaller.
 - **A way that needs no drag** [WCAG 2.5.7, BI-9]. The layout presets are this way. Give each preset a name
-  ("Main and 3 small", "All equal"), in its label and tooltip.
+  ("Main and 3 small", "All equal"), in its label and tooltip. The presets are only in Edit layout, not also in
+  the top bar.
+- **One control for each job.** When two paths do the same job (a button and its key), they act the same and the
+  tooltip names the key. Settings that look alike get names that say what each one changes ("Skip gaps" jumps over
+  gaps while playing; "Draw gaps short on the timeline" only changes the drawing).
 - **Remember the layout** for each number of cameras, and say that it is remembered.
 
 ## 6. Feedback and errors
@@ -115,7 +119,7 @@ The timeline is the centre of the product.
 ## 7. Keyboard and accessibility
 
 - **Every control works with the keyboard**, in a logical focus order, with a visible focus ring [WCAG 2.1.1, 2.4.7].
-- **Player shortcuts:** Space (play/pause), ← and → (one frame), Shift + ← → (5 s), J K L (speed), I and O (clip
+- **Player shortcuts:** Space (play/pause), ← and → (one frame), Shift + ← → (10 s, the same as the ↺ 10 and ↻ 10 buttons), J K L (speed), I and O (clip
   start and end; Shift + I / O goes there), = and − (timeline zoom; Shift + Z shows all), E (next event), number keys
   (cameras), P (pin this moment), and "?" for a list of all shortcuts. Every shortcut action is also a visible
   control [INT-1], and its key is in the control's tooltip [R].
@@ -234,7 +238,15 @@ control that opened it.
 - **Dialogs:** 320, 480 or 640 px wide, never wider than the window minus 32 px. Body padding 16 px. Close
   button 8 px from the edges. Footer on the right, primary button last, at most two buttons. First focus on the
   first input, or on the primary button. Esc closes only the top dialog.
-- **Settings drawer:** 480 px. Changes apply at once. A changed setting has a 2 px accent bar and a Reset action.
+- **Going to a moment** (E, the events list, "Watch from", a pin, "resume"): the video keeps playing or stays
+  paused, and the timeline scrolls only when the moment is out of view.
+- **One card at a time on the video.** On the first load the "Footage loaded" card shows first; the quick tips show
+  after it closes. Esc closes the open panels first, then the cards, then the single-camera view.
+- **Incident summary:** both ways to make it (alone, or in the evidence package) show the same moment: the strongest
+  event in the clip range, or the middle of the range. With no clip range, the dialog says that it uses 10 s before
+  and after the playhead, and it offers "Use the strongest moment".
+- **Settings drawer:** 480 px. It sits beside the app when the window is 1760 px or wider (1280 px for the app), and
+  over the app below that. Changes apply at once. A changed setting has a 2 px accent bar and a Reset action.
   Switches for live settings; checkboxes where a Save button follows.
 
 ## 13. The incident flow [R]
