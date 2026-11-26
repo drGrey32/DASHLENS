@@ -215,7 +215,7 @@ body.dragover #empty .card,body.dragover #stage{outline:2px dashed var(--acc);ou
 #legend span{display:flex;align-items:center;gap:6px;white-space:nowrap}
 #legend .sw,#legend .evmark{margin-right:0}
 .sw{display:inline-block;width:14px;height:10px;border-radius:2px;flex:none;vertical-align:-1px;margin-right:6px}
-.sw-drive{background:#8391b5;border-radius:3px}
+.sw-drive{background:#79a8f2;border-radius:3px}
 .sw-park{background:repeating-linear-gradient(135deg,#4a4436 0 2.4px,#c2b48f 2.4px 3.8px);border-radius:3px}
 .sw-event{background:repeating-linear-gradient(90deg,#f0786a 0 3px,#8a3a33 3px 5px);border-radius:3px}
 .sw-speed{background:linear-gradient(#5cc8c84d,#5cc8c80a);border-top:2px solid #5cc8c8}
@@ -2186,7 +2186,7 @@ function smoothArea(c,pts,base){let k=0;
 /* =====================================================================
    Timeline
    ===================================================================== */
-const CAT_COL={normal:'#8391b5',event:'#f0786a',parking:'#c2b48f'},CAT_NAME={normal:'Driving',event:'Event recording',parking:'Parking recording'};
+const CAT_COL={normal:'#79a8f2',event:'#f0786a',parking:'#c2b48f'},CAT_NAME={normal:'Driving',event:'Event recording',parking:'Parking recording'};
 const TL={cv:null,ctx:null,w:0,h:0,dpr:1,view:{c0:0,c1:1},dirty:true,user:false};
 function tlInit(){TL.cv=$('#tlc');TL.ctx=TL.cv.getContext('2d');new ResizeObserver(tlResize).observe($('#tl'));tlResize();
   const pat=(w,hh,fn)=>{const cv=document.createElement('canvas');cv.width=w;cv.height=hh;fn(cv.getContext('2d'));return TL.ctx.createPattern(cv,'repeat')};
