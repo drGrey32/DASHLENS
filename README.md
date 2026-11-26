@@ -29,6 +29,8 @@ It just sits there, quietly doing its fucking job. A concept apparently lost on 
 - **Frame-by-frame navigation:** Examine the precise moment someone's last functioning brain cell resigned.
 - **Customizable camera layouts:** Resize, rearrange, zoom, mirror and flip things until your inner control freak achieves inner peace.
 - **Snapshots:** Preserve particularly distinguished moments of human incompetence.
+- **Jump to the events:** "Next event", "Previous event" and a list with the time, peak g and speed, so you don't scrub through 40 minutes of motorway to find the one second that matters.
+- **Save evidence:** Export the moment from every camera as one video file, with the time, speed and G-force on it, or make a printable incident summary for your insurer. Your original files stay untouched.
 - **Local processing:** Your footage stays on your computer. Your questionable karaoke sessions are nobody else's business.
 
 ## Why pay when you can have it for free?
@@ -67,7 +69,7 @@ DASHLENS is designed to work with common dashcam recording conventions, from sin
 
 - GPS and G-sensor displays require compatible recorded telemetry.
 - H.265/HEVC playback requires compatible browser and system decoding support.
-- Online map tiles require an internet connection and are fetched from external map providers; your video files are processed locally in your browser and are not uploaded by DASHLENS.
+- Online map tiles require an internet connection and are fetched from external map providers; your video files are processed locally in your browser and are not uploaded by DASHLENS. One switch turns the map tiles off, and then nothing at all is loaded from the internet.
 - Local video playback does not require an internet connection.
 
 ## Frequently Unasked Questions
