@@ -32,6 +32,8 @@ It just sits there, quietly doing its fucking job. A concept apparently lost on 
 - **Jump to the events:** "Next event", "Previous event" and a list with the time, peak g and speed, so you don't scrub through 40 minutes of motorway to find the one second that matters.
 - **Save evidence:** One click saves an evidence folder: the moment from every camera as one video file (with the time, speed and G-force on it), a printable incident summary, exact copies of the original files, the GPS route, and SHA-256 checksums of everything. Your original files stay untouched.
 - **Straight to the point:** After loading, DashLens shows the strongest moment in the footage and says why it picked it. Hover over the timeline to see the frame under the pointer.
+- **Whole-drive overview:** A thin strip above the timeline shows all your footage, with events, pins and gaps. Click it to jump there. Zoom presets go from the whole drive down to 10 seconds.
+- **Numbers on the lanes:** The speed and G-force lanes show the value under the pointer. Shift + drag on the timeline selects a range and tells you its top speed, peak G-force and speed change, and the map shows that part of the route.
 - **Pins:** Press P to pin a moment and write a note on it. Pins, with a picture of the frame, go into the incident summary.
 - **Pick up where you left off:** Open the same footage again and DashLens offers to go back to where you stopped, with your pins and clip range. This is kept in your browser only.
 - **Telemetry as CSV:** Speed, position, heading and G-force, one row for each reading the camera recorded, ready for a spreadsheet.

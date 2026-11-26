@@ -3,7 +3,9 @@
 These guidelines come from the design research of the OBD Inject app (`design/apex/RESEARCH.md` and
 `design/apex/research/*.md` in that project). Only the rules that apply to a dashcam viewer are here. Each rule shows
 its research ID in brackets, so you can find the source. Rules marked [R] come from DashLens's own research report,
-`reports/Premium UI UX sources verified.md`, which was checked against primary sources.
+`reports/Premium UI UX sources verified.md`, which was checked against primary sources, and from
+`reports/Desktop UI references for DashLens.md` (desktop numbers: controls, spacing, type, notifications). DashLens is
+made for desktops, laptops and landscape monitors, not phones.
 
 ## 1. Purpose and users
 
@@ -48,6 +50,14 @@ The timeline is the centre of the product.
   the peak g and the speed. This is the owner's main need after an incident.
 - **Telemetry on the same time axis** [R]. Speed and G-force are lanes of the timeline, with their names in the lane.
 - **Show the frame under the pointer** [R]. Hovering over the timeline shows a picture of that frame and its time.
+- **Overview strip** [R] (DaVinci Resolve's Cut page). A 20 px strip above the timeline shows all the footage: drives,
+  events, pins, gaps and the part that the timeline shows. A click or a drag on it moves the timeline view. Zoom
+  presets: All, Drive, 10 min, 1 min and 10 s.
+- **Values beside the lanes** [R] (Strava). The speed and G-force lanes show the value at the pointer, or at the
+  playhead when the pointer is not on the timeline.
+- **A clip range is a separate gesture** [R]. Shift + drag on the timeline selects a range; a plain drag always
+  scrubs. The range chip gives the top speed, the peak G-force and the speed at the start and end. The map shows the
+  range in the accent colour, and Save evidence uses the same range.
 
 ## 4. Telemetry: speed, heading, map, G-sensor
 
@@ -73,6 +83,12 @@ The timeline is the centre of the product.
   reading says "nothing recorded".
 - **Missing telemetry** [INT-23]. When a camera recorded no GPS or G-sensor data, the panel says so in one quiet
   line. It does not show an empty chart.
+- **Name missing data** [R]. Say "No GPS in this clip" or "No GPS in these files" where the speed would be, never 0.
+- **Follow on the map has three states** [R] (MapLibre): following (filled), not following after the user pans
+  (dashed; C or the button follows again), and disabled when there is no GPS. When the tiles cannot load, say "Map
+  tiles need internet. The route is still shown."
+- **A small G-sensor panel shows only the lanes** [R], at full width, when the ball chart would be smaller than
+  110 px.
 
 ## 5. Layout editing
 
@@ -111,6 +127,18 @@ The timeline is the centre of the product.
   Lc 60 at weight 500 or more. The dimmest grey is only for disabled text and placeholders.
 - **Reduce motion:** with `prefers-reduced-motion`, nothing moves or scales. State changes keep a short opacity fade
   (about 120 ms), so that the change is still visible [R]. Playback and scrubbing never get extra animation.
+- **Targets:** every pointer target is at least 24 × 24 CSS px [WCAG 2.5.8]. A slider or scrubber is one target,
+  so its whole box is at least 24 px tall. The drawn track can be thinner.
+- **Toolbar:** a `role="toolbar"` has one Tab stop, and the arrow keys move focus inside it [APG]. A horizontal
+  slider is the last control in the toolbar. After a pointer click on a transport button, the focus goes back to
+  the player.
+- **Focus ring:** 2 px solid accent, offset 2 px. Use -2 px only inside containers that clip [WCAG 2.4.13].
+  Sticky parts never cover the focused control [WCAG 2.4.11].
+- **Tooltips:** only on icon buttons, with the name and the key. Show after 400 ms; at once if another tooltip
+  closed less than 500 ms ago; at once on keyboard focus. Hide on blur and Esc. The pointer can move onto the
+  tooltip [WCAG 1.4.13]. Width at most 250 px, 4 px from the target. No tooltip during a drag.
+- **Zoom:** drawers, dialogs, lists and the summary fit 320 CSS px wide without horizontal scroll [WCAG 1.4.10].
+  Video, map and timeline are exempt.
 
 ## 8. Visual design
 
@@ -129,6 +157,21 @@ The timeline is the centre of the product.
 - **The dark theme stays** [R], because it is right for video. "Near-black with one bright accent" is a listed
   AI default, so DashLens's identity comes from the footage, the timeline and the evidence workflow, not from the
   palette.
+- **Control heights:** 24, 32 and 40 px only. 24 px for timeline, lane, tile and chip controls (12 px text). 32 px
+  for all other controls (14 px text). 40 px only for the start-screen primary action. Square buttons are as wide
+  as they are tall. One height in each button group.
+- **Spacing:** 2, 4, 6, 8, 12, 16, 20, 24, 32 and 48 px only. Gaps use 2, 4, 6, 8, 12, 16 or 24. Space inside a
+  group is smaller than space between groups. Use `gap` on the parent, not margins on the children. Borders sit
+  outside the padding.
+- **Text sizes:** 12, 14, 16, 20 and 28 px only. 12 px for single lines only. 28 px for the speed readout only.
+  Line heights are multiples of 4.
+- **Weights:** 400, 500 and 600 only. `b` and `strong` are 600. The speed readout is 500.
+- **Radii:** 4 px chips and lane marks; 6 px buttons, inputs and tooltips; 8 px tiles and cards; 12 px menus,
+  drawers and dialogs. A child radius is never larger than its parent's.
+- **Shadows:** two levels. Each starts with a 1 px ring at 12 % white, because a shadow alone does not show on
+  the dark background.
+- **Icons:** one family, one stroke width. 16 px in 24 px controls and lists, 20 px in 32 px icon-only buttons.
+- **Warnings** use an icon and words, never an amber or orange colour, because orange is the accent.
 
 ## 9. Privacy and trust
 
@@ -168,6 +211,7 @@ This is the job that the product exists for.
 - **Durations**: about 100 ms for press feedback, 125–200 ms for tooltips and small menus, 200–300 ms for dialogs and
   drawers; exits are shorter than entrances. Animate only `transform` and `opacity`; never `transition: all`.
 - **Loading**: show a loader only after 150–300 ms, and keep it at least 300–500 ms, so it does not flash.
+- **Toasts** stay 6 s. Hover or focus stops the timer. A toast with an action stays until the user closes it.
 
 ## 12. States [R]
 
@@ -175,6 +219,11 @@ Design every state of every screen: empty, first run, loading (counted), partly 
 error (on the screen), offline, disabled with the reason, cancelled, success that stays, very many clips, long file
 names. A dialog takes the focus when it opens, keeps it inside, closes with Esc, and gives the focus back to the
 control that opened it.
+- **Dialogs:** 320, 480 or 640 px wide, never wider than the window minus 32 px. Body padding 16 px. Close
+  button 8 px from the edges. Footer on the right, primary button last, at most two buttons. First focus on the
+  first input, or on the primary button. Esc closes only the top dialog.
+- **Settings drawer:** 480 px. Changes apply at once. A changed setting has a 2 px accent bar and a Reset action.
+  Switches for live settings; checkboxes where a Save button follows.
 
 ## 13. The incident flow [R]
 
@@ -184,6 +233,13 @@ card that says why it was chosen ("0.64 g. Both cameras saved it as an event rec
 seconds before the event, paused. The clip range stays
 visible as a chip until it is cleared. The flow ends on the "Your evidence is saved" screen. Write this flow to be
 calm and plain: no jokes, no exclamation marks, no blame (GOV.UK error rules).
+
+## 14. Notifications [R]
+
+- **Toast:** only to confirm something the user did. Two lines at most. Never an error or a warning.
+- **On-screen error:** for anything that went wrong. It stays until fixed or closed. Heading "There is a
+  problem", one sentence of cause, one of fix. The focus moves to it.
+- **No banner for input errors.** Show the error next to the input and in the error summary.
 
 ## Priorities
 
