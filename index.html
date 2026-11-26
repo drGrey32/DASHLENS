@@ -670,7 +670,7 @@ const chLabel=k=>{const c=chCfg(k);if(c.label)return /^[A-D]$/.test(k)?`${c.labe
 /* =====================================================================
    Library model
    ===================================================================== */
-const VERSION='1.6.0';   // semantic version: major.minor.patch, bumped with every release
+const VERSION='1.6.1';   // semantic version: major.minor.patch, bumped with every release
 const IN_FRAME=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const HEVC_OK=(()=>{try{const v=document.createElement('video');return !!(v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"')||v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"'))}catch(e){return false}})();
 const VIDEO_EXT=/\.(mp4|mov|m4v|mkv|webm|ts|avi|mts)$/i, SIDE_EXT=/\.(nmea|gps|gpx|3gf|txt|log)$/i;
@@ -1133,6 +1133,10 @@ function detectAccel(raws,smp){
     const n=D.length,V=new Float64Array(n*3),m=new Float64Array(n);let M=0;
     for(let i=0;i<n;i++){for(let k=0;k<3;k++){const v=get(D[i],off+k*sz);if(!Number.isFinite(v)||Math.abs(v)>1e7)return null;V[i*3+k]=v}m[i]=Math.hypot(V[i*3],V[i*3+1],V[i*3+2]);M+=m[i]}
     M/=n;if(type==='f32'?(M<0.05||M>1e5):M<4)return null;
+    // 32-bit readings read as 16-bit: every second value is only the sign (0 or -1) of the value before it, so one
+    // "axis" never moves (this made the sideways G-force flat on cameras that store X, Y, Z as 32-bit numbers)
+    if(sz===2)for(let k=0;k<2;k++){let half=true;for(let i=0;i<n&&half;i++){const lo=V[i*3+k],hi=V[i*3+k+1];if(hi!==(lo<0?-1:0))half=false}if(half)return null}
+    for(let k=0;k<3;k++){let same=true;for(let i=1;i<n&&same;i++)if(V[i*3+k]!==V[k])same=false;if(same)return null}
     let sd=0;for(let i=0;i<n;i++)sd+=(m[i]-M)**2;const cv=Math.sqrt(sd/n)/M;if(cv>0.15)return null;
     const mv=[0,0,0];for(let i=0;i<n;i++)for(let k=0;k<3;k++)mv[k]+=V[i*3+k]/n;const dom=Math.max(...mv.map(Math.abs))/M;if(dom<0.6)return null;
     let dev=0,d1=0,d2=0,dist=0;const vary=[0,0,0],up=[0,0,0],dn=[0,0,0];
@@ -1160,6 +1164,8 @@ function detectAccel(raws,smp){
       const r=evalAt(c.type,bo)||r0;
       const better=!pick||r.nv>pick.nv||(r.nv===pick.nv&&(bk>pick.k||(bk===pick.k&&r.score<pick.score)));
       if(better)pick={type:c.type,off:bo,k:bk,stride:bs,M:r.M,nv:r.nv,score:r.score}}}
+  // the same bytes also read as 32-bit numbers: prefer that, because 16-bit halves of 32-bit values look like noise
+  if(pick&&pick.type==='i16'&&evalAt('i32',pick.off)){const r=evalAt('i32',pick.off);pick={type:'i32',off:pick.off,k:1,stride:12,M:r.M,nv:r.nv,score:r.score}}
   return pick;
 }
 async function parseSidecar(item){
@@ -2263,7 +2269,7 @@ class AccPanel{
         c.beginPath();smoothArea(c,pts,base);c.fillStyle=(sign>0?posCol:negCol)+'b0';c.fill()}
       c.font='600 12px "IBM Plex Sans",system-ui';const lw=c.measureText(posLab).width+c.measureText(negLab).width+40;
       const sc=peak<0.01?'nothing recorded':`up to ${mx.toFixed(2)} g`;let tl=`${title}, ${sc}`;if(c.measureText(tl).width+lw+12>=w)tl=sc[0].toUpperCase()+sc.slice(1);
-      if(c.measureText(tl).width+lw+12<w){c.textAlign='left';c.fillStyle='#b4b4b4';c.fillText(tl,x+4,ly+12)}
+      c.textAlign='left';c.fillStyle='#b4b4b4';if(c.measureText(tl).width+lw+12<w)c.fillText(tl,x+4,ly+12);else c.fillText(sc[0].toUpperCase()+sc.slice(1),x+4,ly+27)
       c.textAlign='right';let lx=x+w-4;for(const [lab,col] of [[posLab,posCol],[negLab,negCol]]){c.fillStyle=col;c.fillText(lab,lx,ly+12);lx-=c.measureText(lab).width+4;c.fillRect(lx-8,ly+3,8,8);lx-=16}};
     lane(y,A.lon,GCOL.acc,GCOL.brk,'Forward','Speeding up','Braking');
     lane(y+lh+gap,A.lat,GCOL.rt,GCOL.lt,'Sideways','Right','Left');
